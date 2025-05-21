@@ -1,4 +1,8 @@
 const express = require('express');
+const { agenda, initAgenda } = require('./services/agenda');
+initAgenda();
+
+
 var cors = require('cors')
 
 const app = express();
