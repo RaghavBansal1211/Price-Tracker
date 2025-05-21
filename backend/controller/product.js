@@ -1,17 +1,26 @@
 const Product = require('../model/product');
-const {scrapeFullProduct} = require('../services/scraper'); // You implement this
+const {scrapeFullProduct} = require('../services/scraper'); 
+const extractASINInfo = require('../services/extractASIN'); // Create this as a helper
 
 exports.handleAddProduct = async (req, res) => {
   const { url } = req.body;
-  try {
-    const { title, price, image } = await scrapeFullProduct(url);
 
+  try {
+    // Extract asin and domain
+    const { asin, domain } = extractASINInfo(url);
+
+    // Scrape title, image, and current price
+    const { title, price, image } = await scrapeFullProduct(`https://www.amazon.${domain}/dp/${asin}`);
+
+    // Create and save product
     const newProduct = new Product({
       url,
+      asin,
+      domain,
       title,
       image,
       currentPrice: price,
-      priceHistory: [{ price }]
+      priceHistory: [{ price }],
     });
 
     const savedProduct = await newProduct.save();
@@ -21,7 +30,6 @@ exports.handleAddProduct = async (req, res) => {
     res.status(500).json({ error: 'Failed to scrape or save product' });
   }
 };
-
 
 exports.handleGetProduct = async (req, res) => {
   try {
