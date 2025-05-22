@@ -3,6 +3,19 @@ const VerifiedEmail = require('../model/verifiedEmail');
 const {sendOtpEmail} = require('../services/otp');
 const {generateOtp} = require('../services/otp');
 
+const handleEmail = async(req,res) =>{
+  const {email} = req.body;
+  try{
+     const result =  await VerifiedEmail.findOne({email:email});
+    if(result) return res.status(200).json({verified:true})
+    return res.status(200).json({verified:false}) 
+  }
+  catch(err){
+    return res.status(500).json({message:"Server Error"})
+  }
+ 
+}
+
 const sendOtp = async (req, res) => {
   const { email } = req.body;
 
@@ -59,4 +72,4 @@ const verifyOtp = async (req, res) => {
   res.json({ verified: true });
 };
 
-module.exports = {sendOtp,verifyOtp};
+module.exports = {sendOtp,verifyOtp,handleEmail};
