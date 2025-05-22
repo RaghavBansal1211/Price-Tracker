@@ -2,9 +2,8 @@ const express = require("express");
 const router = express.Router();
 
 
-const {handleAddProduct,handleGetProduct}  = require('../controller/product')
+const {handleCheckOrAddProduct}  = require('../controller/product')
 
-router.post("/",handleAddProduct);
-router.get("/:id",handleGetProduct);
+router.post("/",handleCheckOrAddProduct);
 
 module.exports = router;

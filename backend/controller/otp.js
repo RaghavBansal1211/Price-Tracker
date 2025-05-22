@@ -3,7 +3,7 @@ const VerifiedEmail = require('../model/verifiedEmail');
 const {sendOtpEmail} = require('../services/otp');
 const {generateOtp} = require('../services/otp');
 
-exports.sendOtp = async (req, res) => {
+const sendOtp = async (req, res) => {
   const { email } = req.body;
 
   const cooldownMs = 60 * 1000; // 1 min
@@ -34,7 +34,7 @@ exports.sendOtp = async (req, res) => {
 
 
 
-exports.verifyOtp = async (req, res) => {
+const verifyOtp = async (req, res) => {
   const { email, code } = req.body;
 
   const record = await Otp.findOne({ email });
@@ -58,3 +58,5 @@ exports.verifyOtp = async (req, res) => {
 
   res.json({ verified: true });
 };
+
+module.exports = {sendOtp,verifyOtp};

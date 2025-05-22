@@ -17,11 +17,6 @@ const AlertSchema = new mongoose.Schema({
         type:Number,
         required:true,
     },
-
-    isSent:{
-        type: Boolean,
-        default:false,
-    }
 },{timestamps:true});
 
 const Alert = mongoose.model('alert',AlertSchema);

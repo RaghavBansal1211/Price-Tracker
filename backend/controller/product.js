@@ -3,13 +3,19 @@ const {scrapeFullProduct} = require('../services/scraper');
 const extractASINInfo = require('../services/extractASIN'); 
 const {agenda}  = require('../services/agenda');
 
-exports.handleAddProduct = async (req, res) => {
+const handleCheckOrAddProduct = async (req, res) => {
   const { url } = req.body;
 
   try {
     // Extract asin and domain
     const { asin, domain } = extractASINInfo(url);
 
+    // Check if Product already exists in the DB
+    const existingProduct  = await Product.findOne({asin:asin});
+    if(existingProduct){
+      return res.status(200).json(existingProduct);
+    }
+    
     // Scrape title, image, and current price
     const { title, price, image } = await scrapeFullProduct(`https://www.amazon.${domain}/dp/${asin}`);
 
@@ -35,13 +41,4 @@ exports.handleAddProduct = async (req, res) => {
   }
 };
 
-exports.handleGetProduct = async (req, res) => {
-  try {
-    const product = await Product.findById(req.params.id);
-    if (!product) return res.status(404).json({ error: 'Product not found' });
-    res.json(product);
-  } catch (err) {
-    console.error('Error fetching product:', err.message);
-    res.status(500).json({ error: 'Failed to get product' });
-  }
-};
+module.exports=  {handleCheckOrAddProduct};

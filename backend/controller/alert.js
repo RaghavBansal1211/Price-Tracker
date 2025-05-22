@@ -2,7 +2,7 @@ const Alert = require('../model/alert');
 const Product = require('../model/product');
 const VerifiedEmail = require('../model/verifiedEmail');
 
-exports.handleCreateAlert = async (req, res) => {
+const handleCreateAlert = async (req, res) => {
   const { productId, email, targetPrice } = req.body;
 
   try {
@@ -29,12 +29,4 @@ exports.handleCreateAlert = async (req, res) => {
   }
 };
 
-exports.handleGetAlert = async (req, res) => {
-  try {
-    const alerts = await Alert.find({ productId: req.params.productId });
-    res.json(alerts);
-  } catch (err) {
-    console.error('Error fetching alerts:', err.message);
-    res.status(500).json({ error: 'Failed to get alerts' });
-  }
-};
+module.exports = {handleCreateAlert}

@@ -34,4 +34,4 @@ app.listen(PORT,()=>{
 
 app.use('/api/products',productHandler);
 app.use('/api/alerts',alertHandler);
-app.use('/api/otp',otpHandler)
+app.use('/api/otp',otpHandler);

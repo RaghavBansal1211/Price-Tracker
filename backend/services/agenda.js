@@ -2,6 +2,7 @@ const Agenda = require('agenda');
 const mongoose = require('mongoose');
 const Product = require('../model/product');
 const {scrapePriceOnly} = require('./scraper');
+const sendPriceDropAlerts = require('../services/priceAlert');
 
 const mongoConnectionString = 'mongodb://127.0.0.1:27017/PriceTracker';
 
@@ -28,12 +29,18 @@ agenda.define('scrape product price', async (job) => {
     const { price } = await scrapePriceOnly(url);
 
     // Always push price to history
-    product.priceHistory.push({ price });
+    product.priceHistory.push({ price,timestamp: new Date() });
 
     // Also update current price for reference
     product.currentPrice = price;
 
+    // Keep only last 14 days of price history
+    const twoWeeksAgo = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000);
+    product.priceHistory = product.priceHistory.filter(entry => entry.timestamp >= twoWeeksAgo);
+
+
     await product.save();
+    sendPriceDropAlerts(product);
 
     console.log(`Stored price for product ${productId}: ${price}`);
   } catch (error) {

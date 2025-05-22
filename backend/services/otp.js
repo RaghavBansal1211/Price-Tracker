@@ -1,24 +1,8 @@
-const nodemailer = require('nodemailer');
+const sendEmail = require("./mailSender");
 
-const sendOtpEmail = async (to,subject,text) => {
-  const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-      user: "raghavbansal1211@gmail.com",  
-      pass: "kgjw nicc zosk ccgp"  
-    }
-  });
-
-  const mailOptions = {
-    from: "raghavbansal1211@gmail.com",
-    to,
-    subject,
-    text
-  };
-
-  await transporter.sendMail(mailOptions);
+const sendOtpEmail = async (email, code) => {
+  await sendEmail(email,'Your PricePulse OTP Code',`Your OTP is: ${code}. It will expire in 10 minutes.`);
 };
-
 
 function generateOtp(){
     return Math.floor(100000 + Math.random() * 900000).toString();
