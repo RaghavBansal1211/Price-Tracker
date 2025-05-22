@@ -1,6 +1,7 @@
 const Product = require('../model/product');
 const {scrapeFullProduct} = require('../services/scraper'); 
-const extractASINInfo = require('../services/extractASIN'); // Create this as a helper
+const extractASINInfo = require('../services/extractASIN'); 
+const {agenda}  = require('../services/agenda');
 
 exports.handleAddProduct = async (req, res) => {
   const { url } = req.body;
@@ -24,6 +25,9 @@ exports.handleAddProduct = async (req, res) => {
     });
 
     const savedProduct = await newProduct.save();
+    const job = agenda.create("scrape product price", {productId:savedProduct._id});
+    job.repeatEvery("1 minute");
+    job.save();
     res.status(201).json(savedProduct);
   } catch (err) {
     console.error('Error adding product:', err.message);

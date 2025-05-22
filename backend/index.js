@@ -1,6 +1,5 @@
 const express = require('express');
 const { agenda, initAgenda } = require('./services/agenda');
-initAgenda();
 
 
 var cors = require('cors')
@@ -21,9 +20,12 @@ app.use(cors({
 
 const productHandler = require("./route/product");
 const alertHandler = require("./route/alert");
+const otpHandler = require("./route/otp");
 
 
 connectDB("mongodb://127.0.0.1:27017/PriceTracker");
+initAgenda();
+
 
 app.listen(PORT,()=>{
     console.log(`Server is listening at PORT: ${PORT}`);
@@ -32,3 +34,4 @@ app.listen(PORT,()=>{
 
 app.use('/api/products',productHandler);
 app.use('/api/alerts',alertHandler);
+app.use('/api/otp',otpHandler)

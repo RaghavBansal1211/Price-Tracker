@@ -7,6 +7,7 @@ const mongoConnectionString = 'mongodb://127.0.0.1:27017/PriceTracker';
 
 const agenda = new Agenda({
   db: { address: mongoConnectionString, collection: 'agendaJobs' },
+  maxConcurrency: 50
 });
 
 // Define the scraping job
@@ -19,7 +20,6 @@ agenda.define('scrape product price', async (job) => {
     return;
   }
 
-  console.log(product);
 
   const url = `https://www.amazon.${product.domain}/dp/${product.asin}`;
   console.log(`Scraping price for product ${productId} at ${url}`);
@@ -42,13 +42,15 @@ agenda.define('scrape product price', async (job) => {
 });
 
 // Start agenda and schedule jobs for all products on startup
-async function initAgenda() {
-  await agenda.start();
-  const products = await Product.find();
-  products.forEach(product => {
-    agenda.every('30 minutes', 'scrape product price', { productId: product._id });
-  });
-}
+  async function initAgenda() {
+    await agenda.start();
+    await agenda.cancel({ name: 'scrape product price' });
+    const products = await Product.find();
+    products.forEach(product => {
+      const job = agenda.create("scrape product price", {productId:product._id});
+      job.repeatEvery("1 minute");
+      job.save();
+    });
+  }
 
-module.exports = { agenda, initAgenda };
-
+module.exports = { agenda,initAgenda };
