@@ -1,7 +1,8 @@
 const express = require('express');
 const path = require('path')
 const { agenda, initAgenda } = require('./services/agenda');
-
+const dotenv = require("dotenv");
+dotenv.config();
 
 var cors = require('cors')
 
@@ -9,7 +10,7 @@ const app = express();
 
 
 const {connectDB} = require("./services/config");
-const PORT=8000;
+
 
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use(express.json());
@@ -28,8 +29,8 @@ connectDB("mongodb://127.0.0.1:27017/PriceTracker");
 initAgenda();
 
 
-app.listen(PORT,()=>{
-    console.log(`Server is listening at PORT: ${PORT}`);
+app.listen(process.env.PORT,()=>{
+    console.log(`Server is listening at PORT: ${process.env.PORT}`);
 })
 
 
