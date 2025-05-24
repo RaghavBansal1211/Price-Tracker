@@ -25,7 +25,7 @@ const alertHandler = require("./route/alert");
 const otpHandler = require("./route/otp");
 
 
-connectDB("mongodb://127.0.0.1:27017/PriceTracker");
+connectDB(process.env.MONGODB_CONNECTION_STRING);
 initAgenda();
 
 

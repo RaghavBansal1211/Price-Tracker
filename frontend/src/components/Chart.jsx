@@ -1,4 +1,3 @@
-// Chart.jsx
 import React from 'react';
 import {
   LineChart,
@@ -10,7 +9,7 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 
-const Chart = ({ priceHistory }) => {
+const Chart = ({ priceHistory, domain }) => {
   if (!priceHistory || priceHistory.length === 0) {
     return (
       <div className="flex justify-center items-center py-10 text-gray-500 dark:text-gray-400">
@@ -18,25 +17,25 @@ const Chart = ({ priceHistory }) => {
       </div>
     );
   }
+
   const minPrice = Math.min(...priceHistory.map(p => p.price));
   const maxPrice = Math.max(...priceHistory.map(p => p.price));
   const avgPrice = (
     priceHistory.reduce((sum, p) => sum + p.price, 0) / priceHistory.length
   ).toFixed(2);
 
+  const currency = domain?.includes('in') ? '₹' : '$';
+
   return (
     <div className="w-full h-full p-4 bg-white dark:bg-gray-800 shadow rounded-xl">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-        <h2 className="text-lg font-semibold mb-1 text-gray-900 dark:text-gray-100">Price History</h2>
-        {/* {lastFetchedAt && (
-          <p className="text-sm text-gray-500 dark:text-gray-400 mb-2 sm:mb-0">
-            Last Fetched: {new Date(lastFetchedAt).toLocaleString()}
-          </p>
-        )} */}
+        <h2 className="text-lg font-semibold mb-1 text-gray-900 dark:text-gray-100">
+          Price History
+        </h2>
       </div>
 
       <div className="text-sm text-gray-600 dark:text-gray-300 mb-3">
-        Min: ₹{minPrice} | Max: ₹{maxPrice} | Avg: ₹{avgPrice}
+        Min: {currency}{minPrice} | Max: {currency}{maxPrice} | Avg: {currency}{avgPrice}
       </div>
 
       <div className="w-full h-64">
@@ -54,7 +53,7 @@ const Chart = ({ priceHistory }) => {
             <YAxis domain={['auto', 'auto']} stroke="#8884d8" />
             <Tooltip
               labelFormatter={(time) => new Date(time).toLocaleString()}
-              formatter={(value) => `₹${value}`}
+              formatter={(value) => `${currency}${value}`}
               contentStyle={{ backgroundColor: '#1f2937', borderColor: '#4b5563', color: '#f9fafb' }}
               labelStyle={{ color: '#f9fafb' }}
             />
