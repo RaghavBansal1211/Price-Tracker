@@ -20,6 +20,7 @@ app.use(cors({
   }));
 
 
+
 const productHandler = require("./route/product");
 const alertHandler = require("./route/alert");
 const otpHandler = require("./route/otp");
@@ -28,9 +29,9 @@ const otpHandler = require("./route/otp");
 connectDB(process.env.MONGODB_CONNECTION_STRING);
 initAgenda();
 
-
-app.listen(process.env.PORT,()=>{
-    console.log(`Server is listening at PORT: ${process.env.PORT}`);
+const PORT = process.env.PORT || 8000;
+app.listen(PORT,()=>{
+    console.log(`Server is listening at PORT: ${PORT}`);
 })
 
 
