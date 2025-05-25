@@ -40,6 +40,7 @@ const Home = () => {
     setProductAdded(false);
     try {
       const res = await API.post('/products', { url });
+      console.log(res);
       toast.success('Product Loaded successfully!');
       setProductAdded(true);
       setPriceHistory(res.data.priceHistory);

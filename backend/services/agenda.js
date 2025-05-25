@@ -3,6 +3,8 @@ const mongoose = require('mongoose');
 const Product = require('../model/product');
 const {scrapePriceOnly} = require('./scraper');
 const sendPriceDropAlerts = require('../services/priceAlert');
+const dotenv = require("dotenv");
+dotenv.config();
 
 const mongoConnectionString = process.env.MONGODB_CONNECTION_STRING;
 

@@ -20,7 +20,6 @@ app.use(cors({
   }));
 
 
-
 const productHandler = require("./route/product");
 const alertHandler = require("./route/alert");
 const otpHandler = require("./route/otp");
