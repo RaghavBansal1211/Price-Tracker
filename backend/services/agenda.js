@@ -53,7 +53,7 @@ agenda.define('scrape product price', async (job) => {
     const products = await Product.find();
     products.forEach(product => {
       const job = agenda.create("scrape product price", {productId:product._id});
-      job.repeatEvery("1 minute");
+      job.repeatEvery("30 minutes");
       job.save();
     });
   }
