@@ -14,6 +14,7 @@ const getBrowser = async () => {
     try {
       browser = await puppeteer.launch({
         headless: 'new',
+        executablePath: executablePath(), 
         args: [
           '--no-sandbox',
           '--disable-setuid-sandbox',
