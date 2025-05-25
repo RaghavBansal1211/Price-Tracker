@@ -59,5 +59,5 @@ agenda.define('scrape product price', async (job) => {
       job.save();
     });
   }
-
+  
 module.exports = { agenda,initAgenda };

@@ -5,27 +5,24 @@ const fs = require('fs');
 const path = require('path');
 const {cloudinary} = require('../services/cloudinary')
 
-puppeteer.use(StealthPlugin()); 
+puppeteer.use(StealthPlugin()); // ✅ Enable stealth
 
 let browser;
 
 const getBrowser = async () => {
   if (!browser) {
-    try {
-      browser = await puppeteer.launch({
-        headless: 'new',
-        args: [
-          '--no-sandbox',
-          '--disable-setuid-sandbox',
-          '--disable-dev-shm-usage',
-          '--disable-accelerated-2d-canvas',
-          '--disable-gpu',
-          '--window-size=1920x1080'
-        ]
-      });
-    } catch (err) {
-      throw new Error('Failed to launch Puppeteer');
-    }
+    browser = await puppeteer.launch({
+      headless: 'new',
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-gpu',
+      ],
+      executablePath: process.env.NODE_ENV === 'production'
+        ? process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/google-chrome-stable'
+        : await puppeteer.executablePath(),
+    });
   }
   return browser;
 };
