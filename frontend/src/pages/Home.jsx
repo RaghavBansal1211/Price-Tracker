@@ -198,7 +198,7 @@ const Home = () => {
             <div className="flex flex-col sm:flex-row items-center gap-4">
               {productImage && (
                 <img
-                  src={`http://localhost:8000/${productImage}`}
+                  src={productImage}
                   alt={productName}
                   className="w-28 h-28 object-contain rounded border dark:border-gray-700"
                 />

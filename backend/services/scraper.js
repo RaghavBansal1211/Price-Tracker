@@ -3,6 +3,7 @@ const StealthPlugin = require('puppeteer-extra-plugin-stealth');
 const axios = require('axios');
 const fs = require('fs');
 const path = require('path');
+const {cloudinary} = require('../services/cloudinary')
 
 puppeteer.use(StealthPlugin()); // ✅ Enable stealth
 
@@ -75,28 +76,29 @@ const scrapeFullProduct = async (url) => {
 
     const imageUrl = await page.$eval('#landingImage', el => el.src).catch(() => null);
 
-    let localImagePath = null;
+   let localImagePath = null;
     if (imageUrl) {
       try {
-        const imageExt = path.extname(new URL(imageUrl).pathname).split('?')[0] || '.jpg';
-        const imageName = `${Date.now()}${imageExt}`;
-        const imagePath = path.join(__dirname, '../uploads', imageName);
-
-        const response = await axios({ url: imageUrl, responseType: 'stream' });
-        const writer = fs.createWriteStream(imagePath);
-        response.data.pipe(writer);
-
-        await new Promise((resolve, reject) => {
-          writer.on('finish', resolve);
-          writer.on('error', reject);
+        const response = await axios.get(imageUrl, { 
+          responseType: 'arraybuffer' 
         });
+        
+        const imageBuffer = Buffer.from(response.data, 'binary');
+        
+        const uploadResult = await cloudinary.uploader.upload(
+          `data:${response.headers['content-type'] || 'image/jpeg'};base64,${imageBuffer.toString('base64')}`,
+          {
+            folder: 'amazon-products',
+            quality_analysis: true,
+            fetch_format: 'auto'
+          }
+        );
 
-        localImagePath = `uploads/${imageName}`;
+        localImagePath = uploadResult.secure_url;
       } catch (err) {
-        console.warn('Image download failed:', err.message);
+        console.warn('Image upload failed:', err.message);
       }
     }
-
     return { title, price: numericPrice, image: localImagePath };
   } catch (err) {
     console.error('Scraping failed:', err.message);
