@@ -1,13 +1,4 @@
-/**
- * @type {import("puppeteer").Configuration}
- */
+const { join } = require('path');
 module.exports = {
-  // Download Chrome (default `skipDownload: false`).
-  chrome: {
-    skipDownload: false,
-  },
-  // Download Firefox (default `skipDownload: true`).
-  firefox: {
-    skipDownload: false,
-  },
+  cacheDirectory: join(__dirname, '.cache', 'puppeteer'),
 };
