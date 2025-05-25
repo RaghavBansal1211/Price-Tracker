@@ -8,7 +8,7 @@ npm install
 # npm run build 
 
 # Ensure the Puppeteer cache directory exists
-PUPPETEER_CACHE_DIR=/opt/render/project/src/backend/.cache/puppeteer
+PUPPETEER_CACHE_DIR=/opt/render/project/.cache/puppeteer
 mkdir -p $PUPPETEER_CACHE_DIR
 
 # Install Puppeteer and download Chrome
