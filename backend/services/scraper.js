@@ -1,8 +1,7 @@
 const puppeteer = require('puppeteer-extra');
 const StealthPlugin = require('puppeteer-extra-plugin-stealth');
 const axios = require('axios');
-const fs = require('fs');
-const path = require('path');
+const { executablePath } = require('puppeteer');
 const {cloudinary} = require('../services/cloudinary')
 
 puppeteer.use(StealthPlugin());
