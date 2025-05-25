@@ -23,7 +23,6 @@ agenda.define('scrape product price', async (job) => {
 
 
   const url = `https://www.amazon.${product.domain}/dp/${product.asin}`;
-  console.log(`Scraping price for product ${productId} at ${url}`);
 
   try {
     const { price } = await scrapePriceOnly(url);
@@ -42,7 +41,6 @@ agenda.define('scrape product price', async (job) => {
     await product.save();
     sendPriceDropAlerts(product);
 
-    console.log(`Stored price for product ${productId}: ${price}`);
   } catch (error) {
     console.error(`Failed to scrape product ${productId}:`, error.message);
   }
@@ -55,7 +53,7 @@ agenda.define('scrape product price', async (job) => {
     const products = await Product.find();
     products.forEach(product => {
       const job = agenda.create("scrape product price", {productId:product._id});
-      job.repeatEvery("30 minutes");
+      job.repeatEvery("1 minute");
       job.save();
     });
   }

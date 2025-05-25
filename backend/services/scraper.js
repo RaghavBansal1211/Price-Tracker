@@ -1,14 +1,16 @@
-const puppeteer = require('puppeteer');
+const puppeteer = require('puppeteer-extra');
+const StealthPlugin = require('puppeteer-extra-plugin-stealth');
 const axios = require('axios');
 const fs = require('fs');
 const path = require('path');
+
+puppeteer.use(StealthPlugin()); // ✅ Enable stealth
 
 let browser;
 
 const getBrowser = async () => {
   if (!browser) {
     try {
-      console.log('Launching Puppeteer...');
       browser = await puppeteer.launch({
         headless: 'new',
         args: [
@@ -20,14 +22,13 @@ const getBrowser = async () => {
           '--window-size=1920x1080'
         ]
       });
-      console.log('Browser launched successfully.');
     } catch (err) {
-      console.error('Failed to launch Puppeteer:', err);
       throw new Error('Failed to launch Puppeteer');
     }
   }
   return browser;
 };
+
 
 const checkAvailability = async (page) => {
   try {
