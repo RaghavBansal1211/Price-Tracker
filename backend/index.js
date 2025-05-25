@@ -15,7 +15,7 @@ const {connectDB} = require("./services/config");
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use(express.json());
 app.use(cors({
-    origin: 'http://localhost:5173', 
+    origin: process.env.FRONT_END_URL, 
     credentials: true,
   }));
 
