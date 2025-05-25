@@ -5,51 +5,74 @@ const { cloudinary } = require('../services/cloudinary');
 
 puppeteer.use(StealthPlugin());
 
+let browser;
+
+const getBrowser = async () => {
+  if (!browser) {
+    browser = await puppeteer.launch({
+      headless: 'new',
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--single-process',
+        '--disable-dev-shm-usage',
+      ],
+    });
+  }
+  return browser;
+};
+
+const preparePage = async () => {
+  const browser = await getBrowser();
+  const page = await browser.newPage();
+
+  // Prevent loading images, fonts, etc.
+  await page.setRequestInterception(true);
+  page.on('request', (req) => {
+    const type = req.resourceType();
+    if (['image', 'stylesheet', 'font'].includes(type)) {
+      req.abort();
+    } else {
+      req.continue();
+    }
+  });
+
+  // Set user agent
+  await page.setUserAgent(
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36'
+  );
+
+  return page;
+};
+
 const checkAvailability = async (page) => {
   try {
     const text = await page.$eval('#availability', el => el.innerText);
-    if (text && text.toLowerCase().includes('currently unavailable')) {
+    if (text.toLowerCase().includes('currently unavailable')) {
       throw new Error('Product is currently unavailable');
     }
   } catch (err) {
     if (!err.message.includes('unavailable')) {
-      console.warn('Availability block missing or error:', err.message);
+      console.warn('Availability check skipped:', err.message);
     } else {
       throw err;
     }
   }
 };
 
-const launchBrowser = async () => {
-  return await puppeteer.launch({
-    headless: 'new',
-    args: ['--no-sandbox', '--disable-setuid-sandbox'],
-  });
-};
-
 const scrapeFullProduct = async (url) => {
   if (!url.includes('amazon.')) throw new Error('Invalid Amazon URL');
 
-  let browser;
-  let page;
-
+  const page = await preparePage();
   try {
-    browser = await launchBrowser();
-    page = await browser.newPage();
-
-    await page.setUserAgent(
-      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36'
-    );
-
     await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
-
     await page.waitForSelector('#productTitle', { timeout: 10000 });
     await checkAvailability(page);
 
     const title = await page.$eval('#productTitle', el => el.innerText.trim());
+
     const priceWhole = await page.$eval('.a-price-whole', el => el.innerText).catch(() => null);
     const priceFraction = await page.$eval('.a-price-fraction', el => el.innerText).catch(() => '00');
-
     if (!priceWhole) throw new Error('Price not found');
 
     const numericPrice = parseFloat(
@@ -58,58 +81,38 @@ const scrapeFullProduct = async (url) => {
     if (isNaN(numericPrice)) throw new Error('Failed to parse price');
 
     const imageUrl = await page.$eval('#landingImage', el => el.src).catch(() => null);
-    let localImagePath = null;
 
+    let image = null;
     if (imageUrl) {
       try {
-        const response = await axios.get(imageUrl, { responseType: 'arraybuffer' });
-        const imageBuffer = Buffer.from(response.data, 'binary');
-
+        const res = await axios.get(imageUrl, { responseType: 'arraybuffer' });
+        const base64 = Buffer.from(res.data, 'binary').toString('base64');
         const uploadResult = await cloudinary.uploader.upload(
-          `data:${response.headers['content-type'] || 'image/jpeg'};base64,${imageBuffer.toString('base64')}`,
-          {
-            folder: 'amazon-products',
-            quality_analysis: true,
-            fetch_format: 'auto',
-          }
+          `data:${res.headers['content-type'] || 'image/jpeg'};base64,${base64}`,
+          { folder: 'amazon-products' }
         );
-
-        localImagePath = uploadResult.secure_url;
+        image = uploadResult.secure_url;
       } catch (err) {
         console.warn('Image upload failed:', err.message);
       }
     }
 
-    return { title, price: numericPrice, image: localImagePath };
-  } catch (err) {
-    console.error('Scraping failed:', err.message);
-    throw new Error('Scraping failed: ' + err.message);
+    return { title, price: numericPrice, image };
   } finally {
-    if (page && !page.isClosed()) await page.close();
-    if (browser) await browser.close();
+    await page.close();
   }
 };
 
 const scrapePriceOnly = async (url) => {
   if (!url.includes('amazon.')) throw new Error('Invalid Amazon URL');
 
-  let browser;
-  let page;
-
+  const page = await preparePage();
   try {
-    browser = await launchBrowser();
-    page = await browser.newPage();
-
-    await page.setUserAgent(
-      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36'
-    );
-
     await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await checkAvailability(page);
 
     const priceWhole = await page.$eval('.a-price-whole', el => el.innerText).catch(() => null);
     const priceFraction = await page.$eval('.a-price-fraction', el => el.innerText).catch(() => '00');
-
     if (!priceWhole) throw new Error('Price not found');
 
     const numericPrice = parseFloat(
@@ -118,14 +121,16 @@ const scrapePriceOnly = async (url) => {
     if (isNaN(numericPrice)) throw new Error('Failed to parse price');
 
     return { price: numericPrice };
-  } catch (err) {
-    console.error('Price scraping failed:', err.message);
-    throw new Error('Price scraping failed: ' + err.message);
   } finally {
-    if (page && !page.isClosed()) await page.close();
-    if (browser) await browser.close();
+    await page.close();
   }
 };
+
+// Close browser cleanly when process exits
+process.on('SIGINT', async () => {
+  if (browser) await browser.close();
+  process.exit(0);
+});
 
 module.exports = {
   scrapeFullProduct,

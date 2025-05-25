@@ -10,11 +10,11 @@ const mongoConnectionString = process.env.MONGODB_CONNECTION_STRING;
 
 const agenda = new Agenda({
   db: { address: mongoConnectionString, collection: 'agendaJobs' },
-  maxConcurrency: 50
+  maxConcurrency: 1
 });
 
 // Define the scraping job
-agenda.define('scrape product price', async (job) => {
+agenda.define('scrape product price',{concurrency: 1,lockLimit: 1}, async (job) => {
   const { productId } = job.attrs.data;
 
   const product = await Product.findById(productId);
