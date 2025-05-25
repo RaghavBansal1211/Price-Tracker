@@ -5,7 +5,7 @@ const fs = require('fs');
 const path = require('path');
 const {cloudinary} = require('../services/cloudinary')
 
-puppeteer.use(StealthPlugin()); // ✅ Enable stealth
+puppeteer.use(StealthPlugin()); 
 
 let browser;
 
