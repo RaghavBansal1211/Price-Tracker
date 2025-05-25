@@ -4,7 +4,7 @@ const Product = require('../model/product');
 const {scrapePriceOnly} = require('./scraper');
 const sendPriceDropAlerts = require('../services/priceAlert');
 
-const mongoConnectionString = 'mongodb://127.0.0.1:27017/PriceTracker';
+const mongoConnectionString = process.env.MONGODB_CONNECTION_STRING;
 
 const agenda = new Agenda({
   db: { address: mongoConnectionString, collection: 'agendaJobs' },
