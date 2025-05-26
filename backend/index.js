@@ -33,7 +33,9 @@ app.listen(PORT,()=>{
     console.log(`Server is listening at PORT: ${PORT}`);
 })
 
-
+app.get('/', (req, res) => {
+  res.status(200).send('Server is awake and running.');
+});
 app.use('/api/products',productHandler);
 app.use('/api/alerts',alertHandler);
 app.use('/api/otp',otpHandler);
