@@ -7,6 +7,17 @@ puppeteer.use(StealthPlugin());
 
 let browser;
 
+const delay = (ms) => new Promise((res) => setTimeout(res, ms));
+
+// Rotate user agents
+const userAgents = [
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64)...',
+  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)...',
+  'Mozilla/5.0 (X11; Linux x86_64)...',
+  'Mozilla/5.0 (iPhone; CPU iPhone OS 14_2 like Mac OS X)...',
+  'Mozilla/5.0 (Linux; Android 10; SM-G970F)...'
+];
+
 const getBrowser = async () => {
   if (!browser) {
     browser = await puppeteer.launch({
@@ -26,23 +37,42 @@ const preparePage = async () => {
   const browser = await getBrowser();
   const page = await browser.newPage();
 
-  // Prevent loading images, fonts, etc.
+  // Randomize user agent
+  await page.setUserAgent(userAgents[Math.floor(Math.random() * userAgents.length)]);
+
+  // Block unnecessary resources
   await page.setRequestInterception(true);
   page.on('request', (req) => {
     const type = req.resourceType();
-    if (['image', 'stylesheet', 'font'].includes(type)) {
+    const blockTypes = ['image', 'stylesheet', 'font', 'media', 'script'];
+    if (blockTypes.includes(type)) {
       req.abort();
     } else {
       req.continue();
     }
   });
 
-  // Set user agent
-  await page.setUserAgent(
-    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36'
-  );
+  // Optional viewport to simulate real user
+  await page.setViewport({ width: 1280, height: 800 });
 
   return page;
+};
+
+const scrollPage = async (page) => {
+  await page.evaluate(async () => {
+    await new Promise((resolve) => {
+      let totalHeight = 0;
+      const distance = 100;
+      const timer = setInterval(() => {
+        window.scrollBy(0, distance);
+        totalHeight += distance;
+        if (totalHeight >= document.body.scrollHeight) {
+          clearInterval(timer);
+          resolve();
+        }
+      }, 200);
+    });
+  });
 };
 
 const checkAvailability = async (page) => {
@@ -65,8 +95,12 @@ const scrapeFullProduct = async (url) => {
 
   const page = await preparePage();
   try {
-    await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
-    await page.waitForSelector('#productTitle', { timeout: 10000 });
+    await delay(1000 + Math.random() * 2000);
+    await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 40000 });
+    await scrollPage(page);
+    await delay(1000 + Math.random() * 2000);
+
+    await page.waitForSelector('#productTitle', { timeout: 15000 });
     await checkAvailability(page);
 
     const title = await page.$eval('#productTitle', el => el.innerText.trim());
@@ -81,8 +115,8 @@ const scrapeFullProduct = async (url) => {
     if (isNaN(numericPrice)) throw new Error('Failed to parse price');
 
     const imageUrl = await page.$eval('#landingImage', el => el.src).catch(() => null);
-
     let image = null;
+
     if (imageUrl) {
       try {
         const res = await axios.get(imageUrl, { responseType: 'arraybuffer' });
@@ -108,7 +142,11 @@ const scrapePriceOnly = async (url) => {
 
   const page = await preparePage();
   try {
-    await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await delay(1000 + Math.random() * 2000);
+    await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 40000 });
+    await scrollPage(page);
+    await delay(1000 + Math.random() * 2000);
+
     await checkAvailability(page);
 
     const priceWhole = await page.$eval('.a-price-whole', el => el.innerText).catch(() => null);
@@ -126,7 +164,7 @@ const scrapePriceOnly = async (url) => {
   }
 };
 
-// Close browser cleanly when process exits
+// Gracefully close browser
 process.on('SIGINT', async () => {
   if (browser) await browser.close();
   process.exit(0);
