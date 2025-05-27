@@ -1,14 +1,16 @@
 const puppeteer = require('puppeteer-extra');
 const StealthPlugin = require('puppeteer-extra-plugin-stealth');
 const axios = require('axios');
+const path = require('path');
+const fs = require('fs');
 const { cloudinary } = require('../services/cloudinary');
 
 puppeteer.use(StealthPlugin());
 
 let browser;
 
-const userAgents = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36'
-
+const userAgents =
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36';
 
 const getBrowser = async () => {
   if (!browser) {
@@ -23,7 +25,7 @@ const getBrowser = async () => {
 const preparePage = async () => {
   const browser = await getBrowser();
   const page = await browser.newPage();
-  await page.setUserAgent(userAgents); 
+  await page.setUserAgent(userAgents);
 
   await page.setRequestInterception(true);
   page.on('request', (req) => {
@@ -42,7 +44,7 @@ const preparePage = async () => {
 
 const checkAvailability = async (page) => {
   try {
-    const text = await page.$eval('#availability', el => el.innerText);
+    const text = await page.$eval('#availability', (el) => el.innerText);
     if (text.toLowerCase().includes('currently unavailable')) {
       throw new Error('Product is currently unavailable');
     }
@@ -55,20 +57,37 @@ const checkAvailability = async (page) => {
   }
 };
 
+// Save screenshot to /tmp and upload to Cloudinary
+const saveScreenshot = async (page, label = 'error') => {
+  const fileName = `${label}-${Date.now()}.png`;
+  const filePath = path.join('/tmp', fileName);
+
+  await page.screenshot({ path: filePath, fullPage: true });
+
+  try {
+    const result = await cloudinary.uploader.upload(filePath, {
+      folder: 'amazon-debug',
+    });
+    console.log(`🧪 Screenshot uploaded: ${result.secure_url}`);
+  } catch (err) {
+    console.error('❌ Screenshot upload failed:', err.message);
+  }
+};
+
 const scrapeFullProduct = async (url) => {
   if (!url.includes('amazon.')) throw new Error('Invalid Amazon URL');
   const page = await preparePage();
 
   try {
     await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 40000 });
-
     await page.waitForSelector('#productTitle', { timeout: 15000 });
+
     await checkAvailability(page);
 
-    const title = await page.$eval('#productTitle', el => el.innerText.trim());
+    const title = await page.$eval('#productTitle', (el) => el.innerText.trim());
 
-    const priceWhole = await page.$eval('.a-price-whole', el => el.innerText).catch(() => null);
-    const priceFraction = await page.$eval('.a-price-fraction', el => el.innerText).catch(() => '00');
+    const priceWhole = await page.$eval('.a-price-whole', (el) => el.innerText).catch(() => null);
+    const priceFraction = await page.$eval('.a-price-fraction', (el) => el.innerText).catch(() => '00');
     if (!priceWhole) throw new Error('Price not found');
 
     const numericPrice = parseFloat(
@@ -76,7 +95,7 @@ const scrapeFullProduct = async (url) => {
     );
     if (isNaN(numericPrice)) throw new Error('Failed to parse price');
 
-    const imageUrl = await page.$eval('#landingImage', el => el.src).catch(() => null);
+    const imageUrl = await page.$eval('#landingImage', (el) => el.src).catch(() => null);
     let image = null;
 
     if (imageUrl) {
@@ -94,6 +113,9 @@ const scrapeFullProduct = async (url) => {
     }
 
     return { title, price: numericPrice, image };
+  } catch (err) {
+    await saveScreenshot(page, 'scrapeFullProduct');
+    throw err;
   } finally {
     await page.close();
   }
@@ -105,10 +127,11 @@ const scrapePriceOnly = async (url) => {
 
   try {
     await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 40000 });
+
     await checkAvailability(page);
 
-    const priceWhole = await page.$eval('.a-price-whole', el => el.innerText).catch(() => null);
-    const priceFraction = await page.$eval('.a-price-fraction', el => el.innerText).catch(() => '00');
+    const priceWhole = await page.$eval('.a-price-whole', (el) => el.innerText).catch(() => null);
+    const priceFraction = await page.$eval('.a-price-fraction', (el) => el.innerText).catch(() => '00');
     if (!priceWhole) throw new Error('Price not found');
 
     const numericPrice = parseFloat(
@@ -117,6 +140,9 @@ const scrapePriceOnly = async (url) => {
     if (isNaN(numericPrice)) throw new Error('Failed to parse price');
 
     return { price: numericPrice };
+  } catch (err) {
+    await saveScreenshot(page, 'scrapePriceOnly');
+    throw err;
   } finally {
     await page.close();
   }
