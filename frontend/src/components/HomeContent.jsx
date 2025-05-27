@@ -5,12 +5,13 @@ import { Bell, RefreshCw, Menu } from 'lucide-react';
 import Chart from '../components/Chart';
 import API from '../pages/apiConfig'
 import { useNavigate,useLocation } from 'react-router-dom';
+import {jwtDecode} from 'jwt-decode';
 import 'react-toastify/dist/ReactToastify.css';
 
 const HomeContent = () => {
   const navigate = useNavigate();
   const location = useLocation();
-
+  const [userName, setUserName] = useState('');
   const [productName, setProductName] = useState('');
   const [productDomain, setProductDomain] = useState('');
   const [productImage, setProductImage] = useState('');
@@ -55,6 +56,17 @@ const HomeContent = () => {
       reset({ url: '' });
     }
   };
+  useEffect(() => {
+  const token = localStorage.getItem('token');
+  if (token) {
+    try {
+      const decoded = jwtDecode(token);
+      setUserName(decoded.name || 'User');
+    } catch (err) {
+      console.error('Failed to decode token:', err);
+    }
+  }
+}, []);
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
@@ -145,6 +157,7 @@ const handleCreateAlert = async () => {
         <div className="max-w-7xl mx-auto px-4 flex justify-between items-center h-16">
           <h1 className="text-xl font-bold text-gray-900 dark:text-white">PricePulse</h1>
           <div className="hidden md:flex items-center space-x-6">
+            <span className="text-gray-800 dark:text-gray-200">Welcome, {userName}</span>
             <button onClick={handleMyProductsClick} className="text-gray-800 dark:text-gray-200 hover:text-blue-600">My Products</button>
             <button onClick={handleLogout} className="text-red-600 hover:text-red-800">Log Out</button>
           </div>
@@ -157,10 +170,11 @@ const handleCreateAlert = async () => {
           </button>
         </div>
         {navOpen && (
-          <div className="md:hidden bg-white dark:bg-gray-900 px-4 pb-4 space-y-2">
+        <div className="md:hidden bg-white dark:bg-gray-900 px-4 pb-4 space-y-2">
+            <p className="text-gray-800 dark:text-gray-200">Welcome, {userName}</p>
             <button onClick={handleMyProductsClick} className="block w-full text-left text-gray-800 dark:text-gray-200">My Products</button>
             <button onClick={handleLogout} className="block w-full text-left text-red-600">Log Out</button>
-          </div>
+        </div>
         )}
       </nav>
 

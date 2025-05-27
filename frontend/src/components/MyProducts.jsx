@@ -29,7 +29,15 @@ const MyProducts = () => {
   };
 
   return (
-    <div className="pt-16 px-4 py-6 min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white">
+    <div className="px-4 py-6 min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white">
+      {/* Go Back Button */}
+      <button
+        onClick={() => navigate(-1)}
+        className="mb-4 px-3 py-1 rounded bg-blue-600 text-white hover:bg-blue-700 transition"
+      >
+        ← Go Back
+      </button>
+
       <h2 className="text-2xl font-bold mb-6">📋 My Tracked Products</h2>
 
       {loading ? (

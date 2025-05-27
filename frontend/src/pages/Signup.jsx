@@ -18,8 +18,11 @@ const Signup = () => {
   const [email, setEmail] = useState('');
   const [otp, setOtp] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [sendingOtp, setSendingOtp] = useState(false);
+  const [verifyingOtp, setVerifyingOtp] = useState(false);
 
   const onSendOtp = async (data) => {
+    setSendingOtp(true);
     try {
       const response = await API.post('/users/send-otp', data);
       setEmail(data.email);
@@ -27,10 +30,13 @@ const Signup = () => {
       toast.success('OTP sent to your email');
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to send OTP');
+    } finally {
+      setSendingOtp(false);
     }
   };
 
   const onVerifyOtp = async () => {
+    setVerifyingOtp(true);
     try {
       const res = await API.post('/users/verify-otp', { email, code: otp });
       if (res.data.success) {
@@ -41,6 +47,8 @@ const Signup = () => {
       }
     } catch (err) {
       toast.error('OTP verification failed');
+    } finally {
+      setVerifyingOtp(false);
     }
   };
 
@@ -110,9 +118,12 @@ const Signup = () => {
 
             <button
               type="submit"
-              className="w-full bg-blue-600 text-white py-3 rounded hover:bg-blue-700"
+              disabled={sendingOtp}
+              className={`w-full bg-blue-600 text-white py-3 rounded hover:bg-blue-700 ${
+                sendingOtp ? 'opacity-60 cursor-not-allowed' : ''
+              }`}
             >
-              Sign Up
+              {sendingOtp ? 'Sending OTP...' : 'Sign Up'}
             </button>
 
             <p className="mt-4 text-center text-gray-700 dark:text-gray-300">
@@ -136,16 +147,22 @@ const Signup = () => {
 
             <button
               onClick={onVerifyOtp}
-              className="w-full bg-green-600 text-white py-3 rounded hover:bg-green-700 mb-3"
+              disabled={verifyingOtp}
+              className={`w-full bg-green-600 text-white py-3 rounded hover:bg-green-700 mb-3 ${
+                verifyingOtp ? 'opacity-60 cursor-not-allowed' : ''
+              }`}
             >
-              Verify OTP & Sign Up
+              {verifyingOtp ? 'Verifying...' : 'Verify OTP & Sign Up'}
             </button>
 
             <button
               onClick={handleSubmit(onSendOtp)}
-              className="w-full bg-gray-300 text-black dark:bg-gray-700 dark:text-white py-3 rounded hover:bg-gray-400 dark:hover:bg-gray-600"
+              disabled={sendingOtp}
+              className={`w-full bg-gray-300 text-black dark:bg-gray-700 dark:text-white py-3 rounded hover:bg-gray-400 dark:hover:bg-gray-600 ${
+                sendingOtp ? 'opacity-60 cursor-not-allowed' : ''
+              }`}
             >
-              Resend OTP
+              {sendingOtp ? 'Resending...' : 'Resend OTP'}
             </button>
 
             <p className="mt-4 text-center text-gray-700 dark:text-gray-300">
