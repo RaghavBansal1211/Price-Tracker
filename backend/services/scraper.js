@@ -1,20 +1,16 @@
-const puppeteer = require('puppeteer-extra');
-const StealthPlugin = require('puppeteer-extra-plugin-stealth');
+const puppeteerExtra = require('puppeteer-extra');
+const pluginStealth = require('puppeteer-extra-plugin-stealth');
+const UserAgent = require('user-agents');
 const axios = require('axios');
-const path = require('path');
-const fs = require('fs');
 const { cloudinary } = require('../services/cloudinary');
 
-puppeteer.use(StealthPlugin());
+puppeteerExtra.use(pluginStealth());
 
 let browser;
 
-const userAgents =
-  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36';
-
 const getBrowser = async () => {
   if (!browser) {
-    browser = await puppeteer.launch({
+    browser = await puppeteerExtra.launch({
       headless: 'new',
       args: ['--no-sandbox', '--disable-setuid-sandbox'],
     });
@@ -25,13 +21,14 @@ const getBrowser = async () => {
 const preparePage = async () => {
   const browser = await getBrowser();
   const page = await browser.newPage();
-  await page.setUserAgent(userAgents);
+
+  const userAgent = new UserAgent();
+  await page.setUserAgent(userAgent.toString());
 
   await page.setRequestInterception(true);
   page.on('request', (req) => {
     const type = req.resourceType();
-    const blockTypes = ['image', 'stylesheet', 'font', 'media'];
-    if (blockTypes.includes(type)) {
+    if (['image', 'stylesheet', 'font', 'media'].includes(type)) {
       req.abort();
     } else {
       req.continue();
@@ -40,6 +37,28 @@ const preparePage = async () => {
 
   await page.setViewport({ width: 1280, height: 800 });
   return page;
+};
+
+const saveScreenshotToCloudinary = async (page, label = 'error') => {
+  try {
+    const screenshotBuffer = await page.screenshot({ fullPage: true });
+
+    // Convert buffer to base64 string
+    const base64String = screenshotBuffer.toString('base64');
+    const dataUri = `data:image/png;base64,${base64String}`;
+
+    // Upload to cloudinary folder 'debug-screenshots'
+    const uploadResult = await cloudinary.uploader.upload(dataUri, {
+      folder: 'debug-screenshots',
+      public_id: `${label}-${Date.now()}`,
+      overwrite: true,
+    });
+
+    console.log(`Screenshot uploaded to Cloudinary: ${uploadResult.secure_url}`);
+    return uploadResult.secure_url;
+  } catch (err) {
+    console.error('Failed to upload screenshot to Cloudinary:', err);
+  }
 };
 
 const checkAvailability = async (page) => {
@@ -54,23 +73,6 @@ const checkAvailability = async (page) => {
     } else {
       throw err;
     }
-  }
-};
-
-// Save screenshot to /tmp and upload to Cloudinary
-const saveScreenshot = async (page, label = 'error') => {
-  const fileName = `${label}-${Date.now()}.png`;
-  const filePath = path.join('/tmp', fileName);
-
-  await page.screenshot({ path: filePath, fullPage: true });
-
-  try {
-    const result = await cloudinary.uploader.upload(filePath, {
-      folder: 'amazon-debug',
-    });
-    console.log(`🧪 Screenshot uploaded: ${result.secure_url}`);
-  } catch (err) {
-    console.error('❌ Screenshot upload failed:', err.message);
   }
 };
 
@@ -114,7 +116,7 @@ const scrapeFullProduct = async (url) => {
 
     return { title, price: numericPrice, image };
   } catch (err) {
-    await saveScreenshot(page, 'scrapeFullProduct');
+    await saveScreenshotToCloudinary(page, 'scrapeFullProduct');
     throw err;
   } finally {
     await page.close();
@@ -141,7 +143,7 @@ const scrapePriceOnly = async (url) => {
 
     return { price: numericPrice };
   } catch (err) {
-    await saveScreenshot(page, 'scrapePriceOnly');
+    await saveScreenshotToCloudinary(page, 'scrapePriceOnly');
     throw err;
   } finally {
     await page.close();
