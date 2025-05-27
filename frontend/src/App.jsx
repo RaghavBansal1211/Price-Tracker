@@ -12,8 +12,13 @@ import 'react-toastify/dist/ReactToastify.css';
 const App = () => {
   return (
     <>
-    <ToastContainer position="top-right" autoClose={3000} />
-    <Router>
+   <Router>
+      <ToastContainer
+        position="top-right"
+        autoClose={3000}
+        theme="colored"
+        style={{ zIndex: 9999 }}
+      />
       <Routes>
         <Route path="/signup" element={<Signup />} />
         <Route path="/login" element={<Login />} />
@@ -35,6 +40,7 @@ const App = () => {
         />
       </Routes>
     </Router>
+
     </>
   );
 };
