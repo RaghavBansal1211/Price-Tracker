@@ -1,7 +1,16 @@
 const mongoose = require("mongoose");
 
 const productSchema = new mongoose.Schema({
- 
+  userId:[
+    {
+      customerId:{
+        type:mongoose.Schema.Types.ObjectId,
+        ref:"user",
+        required:true
+      }
+    }
+  ],
+
   asin: {
     type: String,
     required: true,

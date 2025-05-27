@@ -1,25 +1,34 @@
 const Alert = require('../model/alert');
 const Product = require('../model/product');
-const VerifiedEmail = require('../model/verifiedEmail');
 
 const handleCreateAlert = async (req, res) => {
-  const { productId, email, targetPrice } = req.body;
+  const { productId, targetPrice } = req.body;
+  const userId = req.user.id;
 
   try {
-    // Check if product exists
+    // 1. Check if product exists
     const product = await Product.findById(productId);
     if (!product) {
       return res.status(404).json({ error: 'Product not found' });
     }
 
-    // Check if email is verified
-    const verified = await VerifiedEmail.findOne({ email });
-    if (!verified) {
-      return res.status(403).json({ error: 'Email not verified. Please verify your email first.' });
+    // 2. Check for existing alert by same user for same product
+    const existingAlert = await Alert.findOne({
+      productId,
+      'userId.customerId': userId,
+    });
+
+    if (existingAlert) {
+      return res.status(409).json({ error: 'Alert already exists for this user and product' });
     }
 
-    // Create alert
-    const newAlert = new Alert({ productId, email, targetPrice });
+    // 3. Create alert
+    const newAlert = new Alert({
+      productId,
+      userId,
+      targetPrice,
+    });
+
     const savedAlert = await newAlert.save();
 
     res.status(201).json(savedAlert);
@@ -28,5 +37,7 @@ const handleCreateAlert = async (req, res) => {
     res.status(500).json({ error: 'Failed to create alert' });
   }
 };
+
+
 
 module.exports = {handleCreateAlert}

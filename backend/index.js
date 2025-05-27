@@ -8,9 +8,8 @@ var cors = require('cors')
 
 const app = express();
 
-
+const {restrictToLoggedInUserOnly}  = require("./middleware/auth");
 const {connectDB} = require("./services/config");
-
 
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use(express.json());
@@ -22,7 +21,7 @@ app.use(cors({
 
 const productHandler = require("./route/product");
 const alertHandler = require("./route/alert");
-const otpHandler = require("./route/otp");
+const userHandler = require("./route/user");
 
 
 connectDB(process.env.MONGODB_CONNECTION_STRING);
@@ -36,6 +35,7 @@ app.listen(PORT,()=>{
 app.get('/', (req, res) => {
   res.status(200).send('Server is awake and running.');
 });
-app.use('/api/products',productHandler);
-app.use('/api/alerts',alertHandler);
-app.use('/api/otp',otpHandler);
+
+app.use('/api/users',userHandler);
+app.use('/api/products',restrictToLoggedInUserOnly,productHandler);
+app.use('/api/alerts',restrictToLoggedInUserOnly,alertHandler);

@@ -8,9 +8,10 @@ const AlertSchema = new mongoose.Schema({
         required:true,
     },
 
-    email:{
-        type:String,
-        required:true,
+    userId:{
+        type:mongoose.Schema.Types.ObjectId,
+        ref:"user",
+        required:true,    
     },
 
     targetPrice:{
