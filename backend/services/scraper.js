@@ -37,8 +37,21 @@ const preparePage = async () => {
   });
 
   await page.setViewport({ width: 1280, height: 800 });
+
+  // Auto-accept cookies if consent popup is shown
+  page.once('domcontentloaded', async () => {
+    try {
+      await page.waitForSelector('#sp-cc-accept', { timeout: 5000 });
+      await page.click('#sp-cc-accept');
+      console.log('🍪 Accepted cookie consent');
+    } catch (err) {
+      // No cookie banner shown — proceed silently
+    }
+  });
+
   return page;
 };
+
 
 const checkAvailability = async (page) => {
   try {
