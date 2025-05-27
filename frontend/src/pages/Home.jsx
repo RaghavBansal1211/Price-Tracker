@@ -150,11 +150,11 @@ const Home = () => {
           📦 Track Amazon Product Price
         </h1>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center mb-4">
+        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col sm:flex-row gap-2 mb-4">
           <input
             type="text"
             placeholder="Enter Amazon product URL"
-            className="flex-grow border border-gray-300 dark:border-gray-700 rounded-lg px-4 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="flex-1 px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
             {...register('url', {
               required: 'Amazon URL is required',
               validate: {
@@ -178,38 +178,24 @@ const Home = () => {
               trackLoading ? 'opacity-70 cursor-not-allowed' : ''
             }`}
           >
-            {trackLoading && (
-              <span className="animate-spin border-2 border-white border-t-transparent rounded-full w-4 h-4"></span>
-            )}
+            {trackLoading && <span className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full"></span>}
             {trackLoading ? 'Tracking...' : 'Track'}
           </button>
         </form>
 
-        {errors.url && (
-          <p className="text-sm text-red-600 dark:text-red-400 mb-4">{errors.url.message}</p>
-        )}
+        {errors.url && <p className="text-sm text-red-600 dark:text-red-400 mb-4">{errors.url.message}</p>}
       </div>
 
       {productAdded && (
         <div className="mt-8 w-full max-w-5xl flex flex-col lg:flex-row items-start gap-6">
-          <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow w-full lg:w-1/2 flex flex-col">
+          <div className="w-full lg:w-1/2 bg-white dark:bg-gray-800 p-4 rounded-xl shadow flex flex-col">
             <div className="flex flex-col sm:flex-row items-center gap-4">
-              {productImage && (
-                <img
-                  src={productImage}
-                  alt={productName}
-                  className="w-28 h-28 object-contain rounded border dark:border-gray-700"
-                />
-              )}
-              <div className="text-center sm:text-left flex-1">
-                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-                  {productName}
-                </h2>
-                {currentPrice !== null && (
-                  <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
-                    Current Price: {productDomain.includes('in') ? '₹' : '$'}{currentPrice}
-                  </p>
-                )}
+              {productImage && <img src={productImage} alt={productName} className="w-28 h-28 object-contain rounded border dark:border-gray-700" />}
+              <div className="flex-1 text-center sm:text-left">
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">{productName}</h2>
+                <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
+                  Current Price: {productDomain.includes('in') ? '₹' : '$'}{currentPrice}
+                </p>
                 {lastUpdated && (
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
                     Last updated: {lastUpdated.toLocaleString()}
@@ -221,13 +207,11 @@ const Home = () => {
               <button
                 onClick={handleRefresh}
                 disabled={refreshLoading}
-                className={`inline-flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition ${
+                className={`flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition ${
                   refreshLoading ? 'opacity-70 cursor-not-allowed' : ''
                 }`}
               >
-                {refreshLoading && (
-                  <span className="animate-spin border-2 border-white border-t-transparent rounded-full w-4 h-4"></span>
-                )}
+                {refreshLoading && <span className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full"></span>}
                 <RefreshCw className="w-4 h-4" /> Refresh
               </button>
 
@@ -241,11 +225,6 @@ const Home = () => {
           </div>
 
           <div className="w-full lg:w-1/2 bg-white dark:bg-gray-800 p-4 rounded-xl shadow flex flex-col">
-            {lastUpdated && (
-              <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
-                Last updated: {lastUpdated.toLocaleString()}
-              </p>
-            )}
             <Chart priceHistory={priceHistory} domain={productDomain} />
           </div>
         </div>
@@ -254,8 +233,70 @@ const Home = () => {
       {showModal && (
         <div className="fixed inset-0 bg-[rgba(0,0,0,0.2)] flex items-center justify-center z-50">
           <div className="bg-white dark:bg-gray-900 p-6 rounded-xl shadow-lg max-w-md w-full mx-4 text-gray-900 dark:text-white">
-            {/* ...modal content stays unchanged... */}
-            {/* Not repeated here since only the tracking & refresh issue was addressed */}
+            <h2 className="text-lg font-semibold mb-4">Create Price Alert</h2>
+
+            <input
+              {...register('email', { required: true })}
+              type="email"
+              placeholder="Enter your email"
+              className="w-full mb-2 px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800"
+            />
+
+            <input
+              {...register('targetPrice', { required: true })}
+              type="number"
+              placeholder="Target price"
+              className="w-full mb-2 px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800"
+            />
+
+            {!emailChecked && (
+              <button
+                className="w-full mb-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                onClick={checkEmailVerification}
+              >
+                Check Email
+              </button>
+            )}
+
+            {emailChecked && !emailVerified && !otpSent && (
+              <button
+                className="w-full mb-2 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+                onClick={handleSendOtp}
+                disabled={otpLoading}
+              >
+                {otpLoading ? 'Sending OTP...' : 'Send OTP'}
+              </button>
+            )}
+
+            {otpSent && !emailVerified && (
+              <>
+                <input
+                  {...register('otp', { required: true })}
+                  type="text"
+                  placeholder="Enter OTP"
+                  className="w-full mb-2 px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800"
+                />
+                <button
+                  onClick={handleVerifyOtp}
+                  className="w-full mb-2 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+                >
+                  Verify OTP
+                </button>
+              </>
+            )}
+
+            {emailVerified && (
+              <button
+                onClick={handleCreateAlert}
+                className="w-full px-4 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600"
+              >
+                Create Alert
+              </button>
+            )}
+
+            <button onClick={() => setShowModal(false)} className="mt-2 text-sm text-gray-500 underline">
+              Cancel
+            </button>
           </div>
         </div>
       )}
