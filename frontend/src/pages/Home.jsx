@@ -12,7 +12,7 @@ const Home = () => {
   const [productDomain, setProductDomain] = useState('');
   const [productImage, setProductImage] = useState('');
   const [currentPrice, setCurrentPrice] = useState(null);
-  const [trackLoading, setTrackLoading] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [refreshLoading, setRefreshLoading] = useState(false);
   const [productAdded, setProductAdded] = useState(false);
   const [productId, setProductId] = useState('');
@@ -37,10 +37,11 @@ const Home = () => {
   const otp = watch('otp');
 
   const loadProductData = async (url) => {
-    setTrackLoading(true);
+    setLoading(true);
     setProductAdded(false);
     try {
       const res = await API.post('/products', { url });
+      console.log(res);
       toast.success('Product Loaded successfully!');
       setProductAdded(true);
       setPriceHistory(res.data.priceHistory);
@@ -51,9 +52,10 @@ const Home = () => {
       setProductId(res.data._id || 'mock-id');
       setLastUpdated(new Date());
     } catch (err) {
+      console.error(err);
       toast.error(err.response?.data?.error || 'Failed to add product.');
     } finally {
-      setTrackLoading(false);
+      setLoading(false);
     }
   };
 
@@ -78,6 +80,7 @@ const Home = () => {
       setLastUpdated(new Date());
       toast.success('Product data refreshed!');
     } catch (error) {
+      console.error(error);
       toast.error('Failed to refresh product data.');
     } finally {
       setRefreshLoading(false);
@@ -150,11 +153,11 @@ const Home = () => {
           📦 Track Amazon Product Price
         </h1>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col sm:flex-row gap-2 mb-4">
+        <form onSubmit={handleSubmit(onSubmit)} className="flex gap-2 items-center mb-4">
           <input
             type="text"
             placeholder="Enter Amazon product URL"
-            className="flex-1 px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="flex-grow border border-gray-300 dark:border-gray-700 rounded-lg px-4 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
             {...register('url', {
               required: 'Amazon URL is required',
               validate: {
@@ -173,29 +176,47 @@ const Home = () => {
           />
           <button
             type="submit"
-            disabled={trackLoading}
-            className={`flex items-center justify-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition ${
-              trackLoading ? 'opacity-70 cursor-not-allowed' : ''
+            disabled={loading}
+            className={`flex items-center justify-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition min-w-[80px] ${
+              loading ? 'opacity-70 cursor-not-allowed' : ''
             }`}
           >
-            {trackLoading && <span className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full"></span>}
-            {trackLoading ? 'Tracking...' : 'Track'}
+            {loading ? (
+              <>
+                <span className="animate-spin border-2 border-white border-t-transparent rounded-full w-4 h-4"></span>
+                <span className="hidden sm:inline">Tracking...</span>
+              </>
+            ) : (
+              'Track'
+            )}
           </button>
         </form>
 
-        {errors.url && <p className="text-sm text-red-600 dark:text-red-400 mb-4">{errors.url.message}</p>}
+        {errors.url && (
+          <p className="text-sm text-red-600 dark:text-red-400 mb-4">{errors.url.message}</p>
+        )}
       </div>
 
       {productAdded && (
         <div className="mt-8 w-full max-w-5xl flex flex-col lg:flex-row items-start gap-6">
-          <div className="w-full lg:w-1/2 bg-white dark:bg-gray-800 p-4 rounded-xl shadow flex flex-col">
+          <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow w-full lg:w-1/2 flex flex-col">
             <div className="flex flex-col sm:flex-row items-center gap-4">
-              {productImage && <img src={productImage} alt={productName} className="w-28 h-28 object-contain rounded border dark:border-gray-700" />}
-              <div className="flex-1 text-center sm:text-left">
-                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">{productName}</h2>
-                <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
-                  Current Price: {productDomain.includes('in') ? '₹' : '$'}{currentPrice}
-                </p>
+              {productImage && (
+                <img
+                  src={productImage}
+                  alt={productName}
+                  className="w-28 h-28 object-contain rounded border dark:border-gray-700"
+                />
+              )}
+              <div className="text-center sm:text-left flex-1">
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                  {productName}
+                </h2>
+                {currentPrice !== null && (
+                  <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
+                    Current Price: {productDomain.includes('in') ? '₹' : '$'}{currentPrice}
+                  </p>
+                )}
                 {lastUpdated && (
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
                     Last updated: {lastUpdated.toLocaleString()}
@@ -207,12 +228,21 @@ const Home = () => {
               <button
                 onClick={handleRefresh}
                 disabled={refreshLoading}
-                className={`flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition ${
+                className={`inline-flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition min-w-[80px] ${
                   refreshLoading ? 'opacity-70 cursor-not-allowed' : ''
                 }`}
               >
-                {refreshLoading && <span className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full"></span>}
-                <RefreshCw className="w-4 h-4" /> Refresh
+                {refreshLoading ? (
+                  <>
+                    <span className="animate-spin border-2 border-white border-t-transparent rounded-full w-4 h-4"></span>
+                    <span className="hidden sm:inline">Refreshing...</span>
+                  </>
+                ) : (
+                  <>
+                    <RefreshCw className="w-4 h-4" />
+                    <span>Refresh</span>
+                  </>
+                )}
               </button>
 
               <button
@@ -225,6 +255,11 @@ const Home = () => {
           </div>
 
           <div className="w-full lg:w-1/2 bg-white dark:bg-gray-800 p-4 rounded-xl shadow flex flex-col">
+            {lastUpdated && (
+              <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
+                Last updated: {lastUpdated.toLocaleString()}
+              </p>
+            )}
             <Chart priceHistory={priceHistory} domain={productDomain} />
           </div>
         </div>
@@ -233,70 +268,120 @@ const Home = () => {
       {showModal && (
         <div className="fixed inset-0 bg-[rgba(0,0,0,0.2)] flex items-center justify-center z-50">
           <div className="bg-white dark:bg-gray-900 p-6 rounded-xl shadow-lg max-w-md w-full mx-4 text-gray-900 dark:text-white">
-            <h2 className="text-lg font-semibold mb-4">Create Price Alert</h2>
+            <h2 className="text-lg font-semibold mb-4">Set Price Alert</h2>
 
-            <input
-              {...register('email', { required: true })}
-              type="email"
-              placeholder="Enter your email"
-              className="w-full mb-2 px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800"
-            />
-
-            <input
-              {...register('targetPrice', { required: true })}
-              type="number"
-              placeholder="Target price"
-              className="w-full mb-2 px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800"
-            />
-
-            {!emailChecked && (
-              <button
-                className="w-full mb-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-                onClick={checkEmailVerification}
-              >
-                Check Email
-              </button>
-            )}
-
-            {emailChecked && !emailVerified && !otpSent && (
-              <button
-                className="w-full mb-2 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
-                onClick={handleSendOtp}
-                disabled={otpLoading}
-              >
-                {otpLoading ? 'Sending OTP...' : 'Send OTP'}
-              </button>
-            )}
-
-            {otpSent && !emailVerified && (
-              <>
-                <input
-                  {...register('otp', { required: true })}
-                  type="text"
-                  placeholder="Enter OTP"
-                  className="w-full mb-2 px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800"
-                />
+            <div className="mb-4">
+              <label className="block mb-2 text-sm font-medium">Email:</label>
+              <input
+                type="email"
+                className="w-full border border-gray-300 dark:border-gray-700 px-3 py-2 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Enter your email"
+                {...register('email', {
+                  required: 'Email is required',
+                  pattern: {
+                    value: /^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$/,
+                    message: 'Enter a valid email address'
+                  }
+                })}
+              />
+              {errors.email && <p className="text-sm text-red-600 dark:text-red-400 mt-1">{errors.email.message}</p>}
+              {!emailChecked && (
                 <button
-                  onClick={handleVerifyOtp}
-                  className="w-full mb-2 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+                  type="button"
+                  onClick={checkEmailVerification}
+                  className="mt-2 px-3 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
                 >
-                  Verify OTP
+                  Check Verification
                 </button>
-              </>
+              )}
+            </div>
+
+            {emailChecked && !emailVerified && (
+              <div className="mb-4">
+                {otpSent && (
+                  <div className="mb-2">
+                    <label className="block mb-2 text-sm font-medium">Enter OTP:</label>
+                    <input
+                      type="text"
+                      className="w-full border border-gray-300 dark:border-gray-700 px-3 py-2 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="Enter 6-digit OTP"
+                      {...register('otp', {
+                        required: 'OTP is required',
+                        pattern: {
+                          value: /^\d{6}$/,
+                          message: 'Enter a valid 6-digit OTP'
+                        }
+                      })}
+                    />
+                    {errors.otp && (
+                      <p className="text-sm text-red-600 dark:text-red-400 mt-1">{errors.otp.message}</p>
+                    )}
+                  </div>
+                )}
+                <div className="flex gap-2">
+                  <button
+                    onClick={handleSendOtp}
+                    className="bg-blue-600 text-white px-4 py-2 rounded text-sm hover:bg-blue-700 flex items-center gap-2 disabled:opacity-70"
+                    disabled={otpLoading}
+                  >
+                    {otpLoading && (
+                      <span className="animate-spin border-2 border-white border-t-transparent rounded-full w-4 h-4"></span>
+                    )}
+                    {otpSent ? 'Resend OTP' : 'Get OTP'}
+                  </button>
+                  <button
+                    onClick={handleVerifyOtp}
+                    className="bg-green-600 text-white px-4 py-2 rounded text-sm hover:bg-green-700"
+                  >
+                    Verify OTP
+                  </button>
+                </div>
+              </div>
             )}
 
             {emailVerified && (
-              <button
-                onClick={handleCreateAlert}
-                className="w-full px-4 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600"
-              >
-                Create Alert
-              </button>
+              <div className="mb-4">
+                <label className="block mb-2 text-sm font-medium">Target Price (₹):</label>
+                <input
+                  type="number"
+                  className="w-full border border-gray-300 dark:border-gray-700 px-3 py-2 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="e.g., 15000"
+                  {...register('targetPrice', {
+                    required: 'Target price is required',
+                    min: {
+                      value: 1,
+                      message: 'Price must be greater than 0'
+                    }
+                  })}
+                />
+                {errors.targetPrice && (
+                  <p className="text-sm text-red-600 dark:text-red-400 mt-1">{errors.targetPrice.message}</p>
+                )}
+              </div>
             )}
 
-            <button onClick={() => setShowModal(false)} className="mt-2 text-sm text-gray-500 underline">
-              Cancel
-            </button>
+            <div className="flex gap-2 justify-end">
+              <button
+                onClick={() => {
+                  setShowModal(false);
+                  setEmailVerified(false);
+                  setOtpSent(false);
+                  setEmailChecked(false);
+                  reset({ email: '', targetPrice: '', otp: '' });
+                }}
+                className="px-4 py-2 text-gray-600 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-800"
+              >
+                Cancel
+              </button>
+              {emailVerified && (
+                <button
+                  onClick={handleCreateAlert}
+                  className="px-4 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600"
+                >
+                  Create Alert
+                </button>
+              )}
+            </div>
           </div>
         </div>
       )}

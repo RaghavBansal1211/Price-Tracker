@@ -55,14 +55,15 @@ const checkAvailability = async (page) => {
   }
 };
 
-// Save screenshot to /tmp and upload to Cloudinary
+// Save screenshot directly to Cloudinary from buffer (no /tmp)
 const saveScreenshot = async (page, label = 'error') => {
-  const fileName = `${label}-${Date.now()}.png`;
   try {
-    const result = await cloudinary.uploader.upload(filePath, {
-      folder: 'amazon-debug',
-    });
-    console.log(`🧪 Screenshot uploaded: ${result.secure_url}`);
+    const buffer = await page.screenshot({ type: 'png', fullPage: true });
+    const uploadResult = await cloudinary.uploader.upload(
+      `data:image/png;base64,${buffer.toString('base64')}`,
+      { folder: 'amazon-debug', public_id: `${label}-${Date.now()}` }
+    );
+    console.log(`🧪 Screenshot uploaded: ${uploadResult.secure_url}`);
   } catch (err) {
     console.error('❌ Screenshot upload failed:', err.message);
   }
