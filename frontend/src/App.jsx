@@ -16,7 +16,6 @@ const App = () => {
       <ToastContainer
         position="top-right"
         autoClose={3000}
-        theme="colored"
         style={{ zIndex: 9999 }}
       />
       <Routes>
