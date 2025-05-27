@@ -1,6 +1,6 @@
 const bcrypt = require('bcrypt');
 const User = require('../model/user');
-const Otp = require('../model/Otp');
+const Otp = require('../model/otp');
 const { setUser } = require('../services/auth');
 const { generateOtp, sendOtpEmail } = require('../services/otp');
 
