@@ -6,6 +6,7 @@ import Login from './pages/Login';
 import ProtectedRoute from './components/ProtectedRoute';
 import Home from './pages/Home';
 import MyProducts from './components/MyProducts';
+import 'react-toastify/dist/ReactToastify.css';
 
 
 const App = () => {
