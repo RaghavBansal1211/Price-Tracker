@@ -7,7 +7,7 @@ puppeteer.use(StealthPlugin());
 
 let browser;
 
-const userAgents = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36',
+const userAgents = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36'
 
 
 const getBrowser = async () => {
@@ -23,7 +23,7 @@ const getBrowser = async () => {
 const preparePage = async () => {
   const browser = await getBrowser();
   const page = await browser.newPage();
-  await page.setUserAgent(userAgents); // Use first one consistently or randomize if needed
+  await page.setUserAgent(userAgents); 
 
   await page.setRequestInterception(true);
   page.on('request', (req) => {
