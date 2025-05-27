@@ -205,12 +205,15 @@ const handleCreateAlert = async () => {
               })}
             />
             <button
-              type="submit"
-              disabled={loading}
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 min-w-[80px]"
+            type="submit"
+            disabled={loading}
+            className={`bg-blue-600 text-white px-4 py-2 rounded-lg min-w-[80px] transition ${
+                loading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-blue-700'
+            }`}
             >
-              {loading ? 'Tracking...' : 'Track'}
+            {loading ? 'Tracking...' : 'Track'}
             </button>
+
           </form>
           {errors.url && (
             <p className="text-sm text-red-600 mb-4">{errors.url.message}</p>
@@ -237,12 +240,15 @@ const handleCreateAlert = async () => {
               </div>
               <div className="mt-4 flex justify-between items-center">
                 <button
-                  onClick={handleRefresh}
-                  disabled={refreshLoading}
-                  className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+                onClick={handleRefresh}
+                disabled={refreshLoading}
+                className={`bg-blue-600 text-white px-4 py-2 rounded transition ${
+                    refreshLoading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-blue-700'
+                }`}
                 >
-                  {refreshLoading ? 'Refreshing...' : 'Refresh'}
+                {refreshLoading ? 'Refreshing...' : 'Refresh'}
                 </button>
+
                 <button
                   onClick={() => setShowModal(true)}
                   className="bg-yellow-300 text-yellow-900 px-4 py-2 rounded-full hover:bg-yellow-400"

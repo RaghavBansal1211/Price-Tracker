@@ -77,17 +77,13 @@ const Chart = ({ priceHistory, domain }) => {
       </div>
 
       <div className="text-sm text-gray-600 dark:text-gray-300 mb-3">
-        Min: {currency}{minPrice} | Max: {currency}{maxPrice} | Avg: {currency}{avgPrice}
+        Min: {currency}{minPrice.toLocaleString()} | Max: {currency}{maxPrice.toLocaleString()} | Avg: {currency}{parseFloat(avgPrice).toLocaleString()}
       </div>
 
-      <div
-        className="w-full h-64 flex justify-center items-center"
-        style={{ maxWidth: 600, margin: '0 auto', flexShrink: 1, minWidth: 0 }}
-      >
+      <div className="w-full h-64 flex justify-center items-center" style={{ maxWidth: 600, margin: '0 auto', flexShrink: 1, minWidth: 0 }}>
         <ResponsiveContainer width="100%" height="100%">
           <LineChart
             data={dailyData}
-            // Adjust margins here to balance space for Y axis & centering
             margin={{ top: 20, right: 30, left: 10, bottom: 30 }}
           >
             <XAxis
@@ -104,11 +100,12 @@ const Chart = ({ priceHistory, domain }) => {
               stroke="#8884d8"
               tickMargin={10}
               padding={{ top: 10, bottom: 10 }}
-              width={40}  // Fix width explicitly so Y axis doesn't shift
+              width={80} // <-- Sufficient for ₹999,999 or $1,000,000
+              tickFormatter={(value) => `${currency}${value.toLocaleString()}`}
             />
             <Tooltip
               labelFormatter={(time) => new Date(time).toLocaleTimeString()}
-              formatter={(value) => `${currency}${value}`}
+              formatter={(value) => `${currency}${Number(value).toLocaleString()}`}
               contentStyle={{ backgroundColor: '#1f2937', borderColor: '#4b5563', color: '#f9fafb' }}
               labelStyle={{ color: '#f9fafb' }}
             />
