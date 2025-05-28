@@ -7,16 +7,32 @@ puppeteer.use(StealthPlugin());
 
 let browser;
 
-const userAgents =
+const USER_AGENT =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36';
 
-const getBrowser = async () => {
-  if (!browser) {
-    browser = await puppeteer.launch({
+const launchBrowser = async () => {
+  try {
+    const instance = await puppeteer.launch({
       headless: true,
       args: ['--no-sandbox', '--disable-setuid-sandbox'],
-      protocolTimeout:60000
+      protocolTimeout: 60000,
     });
+    console.log('🚀 Browser launched');
+    return instance;
+  } catch (err) {
+    console.error('❌ Failed to launch browser:', err.message);
+    throw err;
+  }
+};
+
+const getBrowser = async () => {
+  if (!browser || !browser.isConnected()) {
+    if (browser) {
+      try {
+        await browser.close();
+      } catch (_) {}
+    }
+    browser = await launchBrowser();
   }
   return browser;
 };
@@ -24,13 +40,12 @@ const getBrowser = async () => {
 const preparePage = async () => {
   const browser = await getBrowser();
   const page = await browser.newPage();
-  await page.setUserAgent(userAgents);
+  await page.setUserAgent(USER_AGENT);
 
   await page.setRequestInterception(true);
   page.on('request', (req) => {
-    const type = req.resourceType();
-    const blockTypes = ['image', 'stylesheet', 'font', 'media'];
-    if (blockTypes.includes(type)) {
+    const blocked = ['image', 'stylesheet', 'font', 'media'];
+    if (blocked.includes(req.resourceType())) {
       req.abort();
     } else {
       req.continue();
@@ -39,20 +54,16 @@ const preparePage = async () => {
 
   await page.setViewport({ width: 1280, height: 800 });
 
-  // Auto-accept cookies if consent popup is shown
   page.once('domcontentloaded', async () => {
     try {
       await page.waitForSelector('#sp-cc-accept', { timeout: 5000 });
       await page.click('#sp-cc-accept');
-      console.log('🍪 Accepted cookie consent');
-    } catch (err) {
-      // No cookie banner shown — proceed silently
-    }
+      console.log('🍪 Cookie consent accepted');
+    } catch (_) {}
   });
 
   return page;
 };
-
 
 const checkAvailability = async (page) => {
   try {
@@ -62,14 +73,13 @@ const checkAvailability = async (page) => {
     }
   } catch (err) {
     if (!err.message.includes('unavailable')) {
-      console.warn('Availability check skipped:', err.message);
+      console.warn('⚠️ Availability check skipped:', err.message);
     } else {
       throw err;
     }
   }
 };
 
-// Save screenshot directly to Cloudinary from buffer (no /tmp)
 const saveScreenshot = async (page, label = 'error') => {
   try {
     const buffer = await page.screenshot({ type: 'png', fullPage: true });
@@ -90,7 +100,6 @@ const scrapeFullProduct = async (url) => {
   try {
     await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 40000 });
     await page.waitForSelector('#productTitle', { timeout: 15000 });
-
     await checkAvailability(page);
 
     const title = await page.$eval('#productTitle', (el) => el.innerText.trim());
@@ -117,16 +126,17 @@ const scrapeFullProduct = async (url) => {
         );
         image = uploadResult.secure_url;
       } catch (err) {
-        console.warn('Image upload failed:', err.message);
+        console.warn('🖼️ Image upload failed:', err.message);
       }
     }
 
     return { title, price: numericPrice, image };
   } catch (err) {
+    console.error('❌ scrapeFullProduct error:', err.message);
     await saveScreenshot(page, 'scrapeFullProduct');
     throw err;
   } finally {
-    await page.close();
+    await page.close().catch(() => {});
   }
 };
 
@@ -136,7 +146,6 @@ const scrapePriceOnly = async (url) => {
 
   try {
     await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 40000 });
-
     await checkAvailability(page);
 
     const priceWhole = await page.$eval('.a-price-whole', (el) => el.innerText).catch(() => null);
@@ -150,17 +159,28 @@ const scrapePriceOnly = async (url) => {
 
     return { price: numericPrice };
   } catch (err) {
+    console.error('❌ scrapePriceOnly error:', err.message);
     await saveScreenshot(page, 'scrapePriceOnly');
     throw err;
   } finally {
-    await page.close();
+    await page.close().catch(() => {});
   }
 };
 
-process.on('SIGINT', async () => {
-  if (browser) await browser.close();
+// Gracefully close browser on exit signals
+const cleanup = async () => {
+  try {
+    if (browser && browser.isConnected()) {
+      await browser.close();
+      console.log('🧼 Browser closed on exit');
+    }
+  } catch (_) {}
   process.exit(0);
-});
+};
+
+process.on('SIGINT', cleanup);
+process.on('SIGTERM', cleanup);
+process.on('exit', cleanup);
 
 module.exports = {
   scrapeFullProduct,
