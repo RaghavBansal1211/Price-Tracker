@@ -13,8 +13,9 @@ const userAgents =
 const getBrowser = async () => {
   if (!browser) {
     browser = await puppeteer.launch({
-      headless: 'new',
+      headless: true,
       args: ['--no-sandbox', '--disable-setuid-sandbox'],
+      protocolTimeout:60000
     });
   }
   return browser;
