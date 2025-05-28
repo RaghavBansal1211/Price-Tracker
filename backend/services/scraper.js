@@ -5,47 +5,28 @@ const { cloudinary } = require('../services/cloudinary');
 
 puppeteer.use(StealthPlugin());
 
-let browser;
-
 const USER_AGENT =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36';
 
+// Open a fresh browser for each request
 const launchBrowser = async () => {
-  try {
-    const instance = await puppeteer.launch({
-      headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox'],
-      protocolTimeout: 60000,
-    });
-    console.log('🚀 Browser launched');
-    return instance;
-  } catch (err) {
-    console.error('❌ Failed to launch browser:', err.message);
-    throw err;
-  }
+  console.log('🚀 Launching new browser...');
+  return await puppeteer.launch({
+    headless: true,
+    args: ['--no-sandbox', '--disable-setuid-sandbox'],
+    protocolTimeout: 180_000, // 3 mins
+  });
 };
 
-const getBrowser = async () => {
-  if (!browser || !browser.isConnected()) {
-    if (browser) {
-      try {
-        await browser.close();
-      } catch (_) {}
-    }
-    browser = await launchBrowser();
-  }
-  return browser;
-};
-
-const preparePage = async () => {
-  const browser = await getBrowser();
+const preparePage = async (browser) => {
   const page = await browser.newPage();
   await page.setUserAgent(USER_AGENT);
 
   await page.setRequestInterception(true);
   page.on('request', (req) => {
-    const blocked = ['image', 'stylesheet', 'font', 'media'];
-    if (blocked.includes(req.resourceType())) {
+    const type = req.resourceType();
+    const blockTypes = ['image', 'stylesheet', 'font', 'media'];
+    if (blockTypes.includes(type)) {
       req.abort();
     } else {
       req.continue();
@@ -54,12 +35,15 @@ const preparePage = async () => {
 
   await page.setViewport({ width: 1280, height: 800 });
 
+  // Handle cookie banners
   page.once('domcontentloaded', async () => {
     try {
       await page.waitForSelector('#sp-cc-accept', { timeout: 5000 });
       await page.click('#sp-cc-accept');
-      console.log('🍪 Cookie consent accepted');
-    } catch (_) {}
+      console.log('🍪 Accepted cookie consent');
+    } catch (err) {
+      // No banner
+    }
   });
 
   return page;
@@ -82,12 +66,12 @@ const checkAvailability = async (page) => {
 
 const saveScreenshot = async (page, label = 'error') => {
   try {
-    const buffer = await page.screenshot({ type: 'png', fullPage: true });
+    const buffer = await page.screenshot({ type: 'png', fullPage: true, timeout: 15000 });
     const uploadResult = await cloudinary.uploader.upload(
       `data:image/png;base64,${buffer.toString('base64')}`,
       { folder: 'amazon-debug', public_id: `${label}-${Date.now()}` }
     );
-    console.log(`🧪 Screenshot uploaded: ${uploadResult.secure_url}`);
+    console.log(`📷 Screenshot uploaded: ${uploadResult.secure_url}`);
   } catch (err) {
     console.error('❌ Screenshot upload failed:', err.message);
   }
@@ -95,23 +79,24 @@ const saveScreenshot = async (page, label = 'error') => {
 
 const scrapeFullProduct = async (url) => {
   if (!url.includes('amazon.')) throw new Error('Invalid Amazon URL');
-  const page = await preparePage();
+
+  const browser = await launchBrowser();
+  const page = await preparePage(browser);
 
   try {
-    await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 40000 });
+    console.log(`🌐 Navigating to: ${url}`);
+    await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60000 });
+
     await page.waitForSelector('#productTitle', { timeout: 15000 });
     await checkAvailability(page);
 
     const title = await page.$eval('#productTitle', (el) => el.innerText.trim());
-
     const priceWhole = await page.$eval('.a-price-whole', (el) => el.innerText).catch(() => null);
     const priceFraction = await page.$eval('.a-price-fraction', (el) => el.innerText).catch(() => '00');
-    if (!priceWhole) throw new Error('Price not found');
 
-    const numericPrice = parseFloat(
-      `${priceWhole.replace(/\D/g, '')}.${priceFraction.replace(/\D/g, '')}`
-    );
-    if (isNaN(numericPrice)) throw new Error('Failed to parse price');
+    if (!priceWhole) throw new Error('Price not found');
+    const price = parseFloat(`${priceWhole.replace(/\D/g, '')}.${priceFraction.replace(/\D/g, '')}`);
+    if (isNaN(price)) throw new Error('Failed to parse price');
 
     const imageUrl = await page.$eval('#landingImage', (el) => el.src).catch(() => null);
     let image = null;
@@ -126,61 +111,48 @@ const scrapeFullProduct = async (url) => {
         );
         image = uploadResult.secure_url;
       } catch (err) {
-        console.warn('🖼️ Image upload failed:', err.message);
+        console.warn('⚠️ Image upload failed:', err.message);
       }
     }
 
-    return { title, price: numericPrice, image };
+    return { title, price, image };
   } catch (err) {
-    console.error('❌ scrapeFullProduct error:', err.message);
+    console.error('❌ scrapeFullProduct failed:', err.message);
     await saveScreenshot(page, 'scrapeFullProduct');
     throw err;
   } finally {
-    await page.close().catch(() => {});
+    await page.close();
+    await browser.close();
   }
 };
 
 const scrapePriceOnly = async (url) => {
   if (!url.includes('amazon.')) throw new Error('Invalid Amazon URL');
-  const page = await preparePage();
+
+  const browser = await launchBrowser();
+  const page = await preparePage(browser);
 
   try {
-    await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 40000 });
+    await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60000 });
     await checkAvailability(page);
 
     const priceWhole = await page.$eval('.a-price-whole', (el) => el.innerText).catch(() => null);
     const priceFraction = await page.$eval('.a-price-fraction', (el) => el.innerText).catch(() => '00');
+
     if (!priceWhole) throw new Error('Price not found');
+    const price = parseFloat(`${priceWhole.replace(/\D/g, '')}.${priceFraction.replace(/\D/g, '')}`);
+    if (isNaN(price)) throw new Error('Failed to parse price');
 
-    const numericPrice = parseFloat(
-      `${priceWhole.replace(/\D/g, '')}.${priceFraction.replace(/\D/g, '')}`
-    );
-    if (isNaN(numericPrice)) throw new Error('Failed to parse price');
-
-    return { price: numericPrice };
+    return { price };
   } catch (err) {
-    console.error('❌ scrapePriceOnly error:', err.message);
+    console.error('❌ scrapePriceOnly failed:', err.message);
     await saveScreenshot(page, 'scrapePriceOnly');
     throw err;
   } finally {
-    await page.close().catch(() => {});
+    await page.close();
+    await browser.close();
   }
 };
-
-// Gracefully close browser on exit signals
-const cleanup = async () => {
-  try {
-    if (browser && browser.isConnected()) {
-      await browser.close();
-      console.log('🧼 Browser closed on exit');
-    }
-  } catch (_) {}
-  process.exit(0);
-};
-
-process.on('SIGINT', cleanup);
-process.on('SIGTERM', cleanup);
-process.on('exit', cleanup);
 
 module.exports = {
   scrapeFullProduct,
