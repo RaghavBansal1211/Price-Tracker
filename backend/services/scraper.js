@@ -10,11 +10,17 @@ puppeteer.use(StealthPlugin());
 const launchBrowser = async () => {
   console.log('🚀 Launching new browser...');
   return await puppeteer.launch({
-    headless: true,
-    args: ['--no-sandbox', '--disable-setuid-sandbox'],
-    timeout: 120000,
-    protocolTimeout: 180_000, 
-  });
+  headless: 'new',
+  args: [
+    '--no-sandbox',
+    '--disable-setuid-sandbox',
+    '--disable-dev-shm-usage',
+    '--disable-accelerated-2d-canvas',
+    '--disable-gpu',
+    '--window-size=1920x1080',
+  ],
+  timeout: 120000,
+});
 };
 
 const preparePage = async (browser) => {
