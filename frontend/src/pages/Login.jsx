@@ -26,7 +26,6 @@ const Login = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-white dark:bg-gray-900 transition-colors px-4">
-      <ToastContainer />
       <div className="bg-gray-50 dark:bg-gray-800 p-8 rounded-xl shadow-lg w-full max-w-md border border-black dark:border-gray-700">
         <h2 className="text-2xl font-bold text-center mb-6 text-gray-800 dark:text-white">
           Welcome Back

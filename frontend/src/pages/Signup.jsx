@@ -52,7 +52,6 @@ const Signup = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4 bg-white dark:bg-gray-900 transition-colors">
-      <ToastContainer />
       <div className="w-full max-w-md bg-gray-50 dark:bg-gray-800 p-8 rounded-lg shadow-md border border-gray-300 dark:border-gray-700">
         <h2 className="text-2xl font-bold text-center text-gray-800 dark:text-white mb-6">
           Create Your Account

@@ -6,7 +6,7 @@ const { cloudinary } = require('../services/cloudinary');
 puppeteer.use(StealthPlugin());
 
 const USER_AGENT =
-  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36';
+  'Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Mobile Safari/537.36';
 
 // Open a fresh browser for each request
 const launchBrowser = async () => {
