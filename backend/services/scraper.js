@@ -2,11 +2,9 @@ const puppeteer = require('puppeteer-extra');
 const StealthPlugin = require('puppeteer-extra-plugin-stealth');
 const axios = require('axios');
 const { cloudinary } = require('../services/cloudinary');
-
+const UserAgent = require('user-agents');
 puppeteer.use(StealthPlugin());
 
-const USER_AGENT =
-  'Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Mobile Safari/537.36';
 
 // Open a fresh browser for each request
 const launchBrowser = async () => {
@@ -20,7 +18,8 @@ const launchBrowser = async () => {
 
 const preparePage = async (browser) => {
   const page = await browser.newPage();
-  await page.setUserAgent(USER_AGENT);
+  const userAgent = new UserAgent({ deviceCategory: 'desktop' });
+  await page.setUserAgent(userAgent.toString());
   await page.setExtraHTTPHeaders({
   'accept-language': 'en-US,en;q=0.9',
   'referer': 'https://www.google.com/',
