@@ -10,8 +10,12 @@ puppeteer.use(StealthPlugin());
 const launchBrowser = async () => {
   console.log('🚀 Launching new browser...');
   return await puppeteer.launch({
-    headless: true,
-    args: ['--no-sandbox', '--disable-setuid-sandbox'],
+    headless: 'new',
+    args: [ '--no-sandbox',
+      '--disable-setuid-sandbox',
+      '--disable-dev-shm-usage',
+    '--disable-accelerated-2d-canvas',
+    '--disable-gpu',],
     protocolTimeout: 180_000, 
   });
 };
@@ -28,7 +32,7 @@ const preparePage = async (browser) => {
   await page.setRequestInterception(true);
   page.on('request', (req) => {
     const type = req.resourceType();
-    const blockTypes = ['image', 'stylesheet', 'font', 'media'];
+    const blockTypes = ['stylesheet', 'font', 'media'];
     if (blockTypes.includes(type)) {
       req.abort();
     } else {
@@ -95,12 +99,9 @@ const scrapeFullProduct = async (url) => {
 
     if (imageUrl) {
       try {
-        const res = await axios.get(imageUrl, { responseType: 'arraybuffer' });
-        const base64 = Buffer.from(res.data, 'binary').toString('base64');
-        const uploadResult = await cloudinary.uploader.upload(
-          `data:${res.headers['content-type'] || 'image/jpeg'};base64,${base64}`,
-          { folder: 'amazon-products' }
-        );
+        const uploadResult = await cloudinary.uploader.upload(imageUrl, {
+          folder: 'amazon-products',
+        });
         image = uploadResult.secure_url;
       } catch (err) {
         console.warn('⚠️ Image upload failed:', err.message);
