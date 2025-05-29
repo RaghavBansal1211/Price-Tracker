@@ -1,49 +1,50 @@
 const puppeteer = require('puppeteer-extra');
 const StealthPlugin = require('puppeteer-extra-plugin-stealth');
 const axios = require('axios');
-const { cloudinary } = require('../services/cloudinary');
+const UserAgent = require('user-agents');
 
 puppeteer.use(StealthPlugin());
 
-const USER_AGENT =
-  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36';
-
-// Open a fresh browser for each request
 const launchBrowser = async () => {
   console.log('🚀 Launching new browser...');
   return await puppeteer.launch({
     headless: true,
     args: ['--no-sandbox', '--disable-setuid-sandbox'],
-    protocolTimeout: 180_000, // 3 mins
+    protocolTimeout: 180_000,
   });
 };
 
 const preparePage = async (browser) => {
   const page = await browser.newPage();
-  await page.setUserAgent(USER_AGENT);
+
+  // Use random realistic user-agent
+  const userAgent = new UserAgent();
+  await page.setUserAgent(userAgent.toString());
+
+  await page.setViewport({ width: 1280, height: 800 });
 
   await page.setRequestInterception(true);
   page.on('request', (req) => {
-    const type = req.resourceType();
     const blockTypes = ['image', 'stylesheet', 'font', 'media'];
-    if (blockTypes.includes(type)) {
+    if (blockTypes.includes(req.resourceType())) {
       req.abort();
     } else {
       req.continue();
     }
   });
 
-  await page.setViewport({ width: 1280, height: 800 });
+  // Spoof navigator.webdriver
+  await page.evaluateOnNewDocument(() => {
+    Object.defineProperty(navigator, 'webdriver', { get: () => false });
+  });
 
-  // Handle cookie banners
+  // Cookie banner auto-accept
   page.once('domcontentloaded', async () => {
     try {
       await page.waitForSelector('#sp-cc-accept', { timeout: 5000 });
       await page.click('#sp-cc-accept');
       console.log('🍪 Accepted cookie consent');
-    } catch (err) {
-      // No banner
-    }
+    } catch {}
   });
 
   return page;
@@ -64,19 +65,7 @@ const checkAvailability = async (page) => {
   }
 };
 
-const saveScreenshot = async (page, label = 'error') => {
-  try {
-    const buffer = await page.screenshot({ type: 'png', fullPage: true, timeout: 15000 });
-    const uploadResult = await cloudinary.uploader.upload(
-      `data:image/png;base64,${buffer.toString('base64')}`,
-      { folder: 'amazon-debug', public_id: `${label}-${Date.now()}` }
-    );
-    console.log(`📷 Screenshot uploaded: ${uploadResult.secure_url}`);
-  } catch (err) {
-    console.error('❌ Screenshot upload failed:', err.message);
-  }
-};
-
+// 📦 Full product scrape
 const scrapeFullProduct = async (url) => {
   if (!url.includes('amazon.')) throw new Error('Invalid Amazon URL');
 
@@ -87,6 +76,7 @@ const scrapeFullProduct = async (url) => {
     console.log(`🌐 Navigating to: ${url}`);
     await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60000 });
 
+    await page.waitForTimeout(1000); // Small delay
     await page.waitForSelector('#productTitle', { timeout: 15000 });
     await checkAvailability(page);
 
@@ -105,20 +95,16 @@ const scrapeFullProduct = async (url) => {
       try {
         const res = await axios.get(imageUrl, { responseType: 'arraybuffer' });
         const base64 = Buffer.from(res.data, 'binary').toString('base64');
-        const uploadResult = await cloudinary.uploader.upload(
-          `data:${res.headers['content-type'] || 'image/jpeg'};base64,${base64}`,
-          { folder: 'amazon-products' }
-        );
-        image = uploadResult.secure_url;
+        const contentType = res.headers['content-type'] || 'image/jpeg';
+        image = `data:${contentType};base64,${base64}`;
       } catch (err) {
-        console.warn('⚠️ Image upload failed:', err.message);
+        console.warn('⚠️ Image fetch failed:', err.message);
       }
     }
 
     return { title, price, image };
   } catch (err) {
     console.error('❌ scrapeFullProduct failed:', err.message);
-    await saveScreenshot(page, 'scrapeFullProduct');
     throw err;
   } finally {
     await page.close();
@@ -126,6 +112,7 @@ const scrapeFullProduct = async (url) => {
   }
 };
 
+// 💲 Price-only scrape
 const scrapePriceOnly = async (url) => {
   if (!url.includes('amazon.')) throw new Error('Invalid Amazon URL');
 
@@ -133,7 +120,9 @@ const scrapePriceOnly = async (url) => {
   const page = await preparePage(browser);
 
   try {
+    console.log(`🔍 Checking price at: ${url}`);
     await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60000 });
+    await page.waitForTimeout(1000);
     await checkAvailability(page);
 
     const priceWhole = await page.$eval('.a-price-whole', (el) => el.innerText).catch(() => null);
@@ -146,7 +135,6 @@ const scrapePriceOnly = async (url) => {
     return { price };
   } catch (err) {
     console.error('❌ scrapePriceOnly failed:', err.message);
-    await saveScreenshot(page, 'scrapePriceOnly');
     throw err;
   } finally {
     await page.close();
