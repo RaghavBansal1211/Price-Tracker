@@ -15,8 +15,7 @@ const launchBrowser = async () => {
       '--disable-dev-shm-usage',
     '--disable-accelerated-2d-canvas',
     '--disable-gpu',],
-    protocolTimeout: 180_000,
-    timeout:0 
+    protocolTimeout: 180_000, 
   });
 };
 
@@ -81,7 +80,7 @@ const scrapeFullProduct = async (url) => {
 
   try {
     console.log(`🌐 Navigating to: ${url}`);
-    await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60000 });
+    await page.goto(url, { waitUntil: ['load','networkidle0'], timeout: 60000 });
 
     await page.waitForSelector('#productTitle', { timeout: 15000 });
     await checkAvailability(page);
@@ -126,7 +125,7 @@ const scrapePriceOnly = async (url) => {
 
   try {
     console.log(`🔍 Checking price at: ${url}`);
-    await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60000 });
+    await page.goto(url, { waitUntil: ['load','networkidle0'], timeout: 60000 });
     await new Promise((res) => setTimeout(res, 3000));
     await checkAvailability(page);
 
