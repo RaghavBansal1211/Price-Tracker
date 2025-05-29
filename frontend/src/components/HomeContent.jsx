@@ -6,7 +6,7 @@ import Chart from '../components/Chart';
 import API from '../pages/apiConfig'
 import { useNavigate,useLocation } from 'react-router-dom';
 import {jwtDecode} from 'jwt-decode';
-import 'react-toastify/dist/ReactToastify.css';
+
 
 const HomeContent = () => {
   const navigate = useNavigate();
