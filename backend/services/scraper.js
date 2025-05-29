@@ -80,8 +80,8 @@ const scrapeFullProduct = async (url) => {
 
   try {
     console.log(`🌐 Navigating to: ${url}`);
-    await page.goto(url, { waitUntil: ['load','networkidle0'], timeout: 60000 });
-
+    await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60000 });
+    await new Promise((res) => setTimeout(res, 3000));
     await page.waitForSelector('#productTitle', { timeout: 15000 });
     await checkAvailability(page);
 
@@ -125,7 +125,7 @@ const scrapePriceOnly = async (url) => {
 
   try {
     console.log(`🔍 Checking price at: ${url}`);
-    await page.goto(url, { waitUntil: ['load','networkidle0'], timeout: 60000 });
+    await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60000 });
     await new Promise((res) => setTimeout(res, 3000));
     await checkAvailability(page);
 
