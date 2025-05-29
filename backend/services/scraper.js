@@ -6,18 +6,38 @@ puppeteer.use(StealthPlugin());
 
 
 // Open a fresh browser for each request
-const launchBrowser = async () => {
-  console.log('🚀 Launching new browser...');
-  return await puppeteer.launch({
+let browser = null;
+
+const getBrowser = async () => {
+  try {
+    if (browser && browser.process() && !browser.process().killed) {
+      return browser;
+    }
+  } catch (err) {
+    console.warn('⚠️ Existing browser instance is invalid:', err.message);
+  }
+
+  console.log('🚀 Launching a new browser instance...');
+  browser = await puppeteer.launch({
     headless: 'new',
-    args: [ '--no-sandbox',
+    args: [
+      '--no-sandbox',
       '--disable-setuid-sandbox',
       '--disable-dev-shm-usage',
-    '--disable-accelerated-2d-canvas',
-    '--disable-gpu',],
-    protocolTimeout: 180_000, 
+      '--disable-accelerated-2d-canvas',
+      '--disable-gpu',
+    ],
+    protocolTimeout: 180_000,
   });
+
+  browser.on('disconnected', () => {
+    console.warn('💥 Browser disconnected. Resetting instance...');
+    browser = null;
+  });
+
+  return browser;
 };
+
 
 const preparePage = async (browser) => {
   const page = await browser.newPage();
@@ -75,7 +95,7 @@ const checkAvailability = async (page) => {
 const scrapeFullProduct = async (url) => {
   if (!url.includes('amazon.')) throw new Error('Invalid Amazon URL');
 
-  const browser = await launchBrowser();
+  const browser = await getBrowser();
   const page = await preparePage(browser);
 
   try {
@@ -113,14 +133,13 @@ const scrapeFullProduct = async (url) => {
     throw err;
   } finally {
     await page.close();
-    await browser.close();
   }
 };
 
 const scrapePriceOnly = async (url) => {
   if (!url.includes('amazon.')) throw new Error('Invalid Amazon URL');
 
-  const browser = await launchBrowser();
+  const browser = await getBrowser();
   const page = await preparePage(browser);
 
   try {
@@ -142,7 +161,6 @@ const scrapePriceOnly = async (url) => {
     throw err;
   } finally {
     await page.close();
-    await browser.close();
   }
 };
 
