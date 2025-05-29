@@ -14,7 +14,7 @@ const App = () => {
     <>
    <Router>
       <ToastContainer
-        position="top-right"
+        position="bottom-right"
         autoClose={3000}
         style={{ zIndex: 9999 }}
       />

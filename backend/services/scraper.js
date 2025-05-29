@@ -1,6 +1,5 @@
 const puppeteer = require('puppeteer-extra');
 const StealthPlugin = require('puppeteer-extra-plugin-stealth');
-const axios = require('axios');
 const { cloudinary } = require('../services/cloudinary');
 const UserAgent = require('user-agents');
 puppeteer.use(StealthPlugin());
@@ -16,7 +15,8 @@ const launchBrowser = async () => {
       '--disable-dev-shm-usage',
     '--disable-accelerated-2d-canvas',
     '--disable-gpu',],
-    protocolTimeout: 180_000, 
+    protocolTimeout: 180_000,
+    timeout:0 
   });
 };
 
