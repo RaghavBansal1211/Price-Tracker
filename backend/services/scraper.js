@@ -40,10 +40,8 @@ const getBrowser = async () => {
             '--disable-dev-shm-usage',
             '--disable-gpu',
             '--disable-web-security',
-            `--user-agent=${new UserAgent({ deviceCategory: 'desktop' })}`
           ],
           protocolTimeout: 120_000,
-          dumpio: true, // Enable debug logs
         });
 
         newBrowser.on('disconnected', () => {
@@ -105,25 +103,37 @@ const isBrowserHealthy = async (browser) => {
 // Page configuration
 const createPage = async (browser) => {
   const page = await browser.newPage();
-  
-  // Anti-detection measures
+
+  // Viewport
+  await page.setViewport({
+    width: 1280 + Math.floor(Math.random() * 100),
+    height: 800 + Math.floor(Math.random() * 100),
+    deviceScaleFactor: 1,
+  });
+
+  // User Agent
+  const userAgent = new UserAgent({ deviceCategory: 'desktop' }).toString();
+  await page.setUserAgent(userAgent);
+
+  // Headers
   await page.setExtraHTTPHeaders({
     'accept-language': 'en-US,en;q=0.9',
-    'sec-ch-ua': '"Chromium";v="116", "Not)A;Brand";v="24"',
-    'sec-ch-ua-mobile': '?0',
-    'sec-ch-ua-platform': '"Windows"',
+    'upgrade-insecure-requests': '1',
+    'sec-fetch-user': '?1',
+    'sec-fetch-site': 'same-origin',
+    'sec-fetch-mode': 'navigate',
   });
-  
-  // Resource blocking
+
+  // Block unnecessary resources
   await page.setRequestInterception(true);
   page.on('request', req => {
     const blockTypes = new Set(['image', 'stylesheet', 'font', 'media']);
     blockTypes.has(req.resourceType()) ? req.abort() : req.continue();
   });
 
-
   return page;
 };
+
 
 // Cleanup handlers
 process.on('SIGTERM', async () => {
