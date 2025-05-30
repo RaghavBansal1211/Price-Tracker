@@ -104,6 +104,21 @@ const isBrowserHealthy = async (browser) => {
 const createPage = async (browser) => {
   const page = await browser.newPage();
 
+    await page.evaluateOnNewDocument(() => {
+    // Spoof navigator and window properties
+    Object.defineProperty(navigator, 'webdriver', { get: () => false });
+    window.chrome = { runtime: {} };
+    Object.defineProperty(navigator, 'plugins', {
+      get: () => [1, 2, 3, 4, 5],
+    });
+    Object.defineProperty(navigator, 'languages', {
+      get: () => ['en-US', 'en'],
+    });
+    Object.defineProperty(navigator, 'maxTouchPoints', {
+      get: () => 1,
+    });
+  });
+
   // Viewport
   await page.setViewport({
     width: 1280 + Math.floor(Math.random() * 100),
